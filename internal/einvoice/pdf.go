@@ -87,6 +87,8 @@ func pageKey(lines []string) string {
 		ser = strings.ToUpper(m[1])
 	} else if m := reSerial2.FindStringSubmatch(all); m != nil {
 		ser = m[2]
+	} else if m := reSerialOld.FindStringSubmatch(all); m != nil {
+		ser = strings.ToUpper(m[1])
 	}
 	for _, re := range []*regexp.Regexp{reNumber, reNumber2} {
 		if m := re.FindStringSubmatch(all); m != nil && ser != "" {
@@ -254,7 +256,7 @@ var (
 	reSerial  = regexp.MustCompile(`(?i)k[ýy] hi[ệe]u[^:]*:\s*([1-6]?[CK][0-9]{2}[A-Z]{2,4})\b`)
 	reNumber  = regexp.MustCompile(`(?i)\bs[ốo]\s*(?:h[óo]a đ[ơo]n)?\s*(?:\(\s*no\.?\s*\))?\s*:\s*0*([0-9]{1,8})\b`)
 	reDate    = regexp.MustCompile(`(?i)ng[àa]y\D{0,20}?(\d{1,2})\s*th[áa]ng\D{0,20}?(\d{1,2})\s*n[ăa]m\D{0,20}?(\d{4})`)
-	reTax     = regexp.MustCompile(`(?i)(?:m[ãa] s[ốo] thu[ếe]|\bmst\b)[^:0-9]{0,30}:?\s*([0-9][0-9 ]{8,13}[0-9](?:-[0-9]{3})?)`)
+	reTax     = regexp.MustCompile(`(?i)(?:m[ãa] s[ốo] thu[ếe]|\bmst\b)[^:0-9]{0,30}:?\s*((?:[0-9] ){9,12}[0-9]\b|[0-9][0-9 ]{8,13}[0-9](?:-[0-9]{3})?)`)
 	reCQT     = regexp.MustCompile(`(?i)m[ãa] (?:c[ủu]a )?cqt[^:]*:\s*([0-9A-F]{20,40})`)
 	reBuyer   = regexp.MustCompile(`(?i)(?:t[êe]n đ[ơo]n v[ịi]|đ[ơo]n v[ịi] mua h[àa]ng)[^:]*:\s*(.+)`)
 	reNameEnd = regexp.MustCompile(`(?i)\s+(?:mst|m[ãa] s[ốo] thu[ếe]|tax code)\b.*$`)
@@ -268,8 +270,11 @@ var (
 	reNumber3 = regexp.MustCompile(`\b0{2,}([1-9][0-9]{0,6})\b`)
 	reDate2   = regexp.MustCompile(`(?i)\(date\)\D{0,15}?(\d{1,2})\D{1,25}?(\d{1,2})\D{1,25}?(\d{4})`)
 	reDate3   = regexp.MustCompile(`\b(\d{1,2})/(\d{1,2})/(20\d{2})\b`)
-	reTax2    = regexp.MustCompile(`(?i)tax code\)?\s*[:.]?\s*([0-9][0-9 ]{8,13}[0-9](?:-[0-9]{3})?)`)
-	reRate    = regexp.MustCompile(`(?i)^(\d{1,2}(?:[.,]\d+)?%|KCT|KKKNT)$`)
+	reTax2    = regexp.MustCompile(`(?i)tax code\)?\s*[:.]?\s*((?:[0-9] ){9,12}[0-9]\b|[0-9][0-9 ]{8,13}[0-9](?:-[0-9]{3})?)`)
+	// Hóa đơn mẫu cũ (trước 7/2022): mẫu số 01GTKT0/001, ký hiệu KT/18E.
+	reFormOld   = regexp.MustCompile(`(?i)m[ẫa]u s[ốo][^:\n]{0,20}:\s*([0-9]{2}[A-Z]{4}[0-9]/[0-9]{3})`)
+	reSerialOld = regexp.MustCompile(`(?i)k[ýy] hi[ệe]u[^:\n]{0,20}:\s*([A-Z]{2}/[0-9]{2}[A-Z])\b`)
+	reRate      = regexp.MustCompile(`(?i)^(\d{1,2}(?:[.,]\d+)?%|KCT|KKKNT)$`)
 )
 
 // ParseText parses the text lines of a printed VAT invoice.
@@ -288,6 +293,11 @@ func ParseText(lines []string) (*model.Invoice, []string, error) {
 		inv.Form, inv.Serial = m[1], m[2]
 		if m[1] < "1" || m[1] > "6" { // OCR đọc "1" thành I, l, |
 			inv.Form = "1"
+		}
+	} else if m := reSerialOld.FindStringSubmatch(all); m != nil {
+		inv.Serial = strings.ToUpper(m[1])
+		if f := reFormOld.FindStringSubmatch(all); f != nil {
+			inv.Form = strings.ToUpper(f[1])
 		}
 	}
 	for _, re := range []*regexp.Regexp{reNumber, reNumber2, reNumber3} {
@@ -495,9 +505,9 @@ func parseItems(lines []string, inv *model.Invoice) {
 		if strings.Contains(l, "stt") || strings.Contains(l, "ten hang") || strings.Contains(l, "name of goods") {
 			start = i + 1
 			hasCode = strings.Contains(l, "ma hang") || strings.Contains(l, "ma hh") || strings.Contains(l, "ma vt") || strings.Contains(l, "item code")
-			head := textutil.Fold(strings.Join(lines[i:min(len(lines), i+3)], " "))
+			head := textutil.Fold(strings.Join(lines[max(0, i-1):min(len(lines), i+3)], " "))
 			noPrice = !strings.Contains(head, "don gia") && !strings.Contains(head, "price") && !strings.Contains(head, "gia ban")
-			noUnit = !strings.Contains(head, "don vi") && !strings.Contains(head, "dvt") && !strings.Contains(head, "(unit)") && !strings.Contains(head, "uom")
+			noUnit = !strings.Contains(head, "don vi") && !strings.Contains(head, "vi tinh") && !strings.Contains(head, "dvt") && !strings.Contains(head, "(unit)") && !strings.Contains(head, "uom")
 			break
 		}
 	}

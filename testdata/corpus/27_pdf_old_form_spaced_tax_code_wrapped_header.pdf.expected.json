@@ -1,0 +1,29 @@
+{
+  "should_parse": true,
+  "form": "01GTKT0/001",
+  "serial": "AB/19E",
+  "number": "28",
+  "date": "2020-03-16",
+  "seller_tax": "0100000003",
+  "line_count": 2,
+  "lines": [
+    {
+      "name": "Vữa chống thấm gốc xi măng 107",
+      "unit": "Kg",
+      "qty": 225,
+      "amount": 5355000,
+      "vat_rate": "10%"
+    },
+    {
+      "name": "Lưới thủy tinh gia cường",
+      "unit": "Cuộn",
+      "qty": 4,
+      "amount": 1400000,
+      "vat_rate": "10%"
+    }
+  ],
+  "total_before_vat": 6755000,
+  "total_vat": 675500,
+  "total": 7430500,
+  "note": "Pre-2022 invoice (Mẫu số 01GTKT0/001, ký hiệu AB/19E); tax code printed letter-spaced; 'Đơn vị tính' header wraps around the STT line; one VAT rate under the table."
+}
