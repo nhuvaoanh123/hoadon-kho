@@ -2,8 +2,6 @@
 package server
 
 import (
-	"archive/zip"
-	"bytes"
 	"crypto/rand"
 	"embed"
 	"encoding/hex"
@@ -27,6 +25,7 @@ import (
 	"github.com/nhuvaoanh123/hoadon-kho/internal/einvoice"
 	"github.com/nhuvaoanh123/hoadon-kho/internal/export"
 	"github.com/nhuvaoanh123/hoadon-kho/internal/model"
+	"github.com/nhuvaoanh123/hoadon-kho/internal/ocr"
 	"github.com/nhuvaoanh123/hoadon-kho/internal/store"
 	"github.com/nhuvaoanh123/hoadon-kho/internal/textutil"
 )
@@ -57,6 +56,9 @@ func New(st *store.Store, dataDir, version string) http.Handler {
 	s.mux.HandleFunc("GET /api/ping", s.ping)
 	s.mux.HandleFunc("POST /api/parse", s.parse)
 	s.mux.HandleFunc("POST /api/invoices", s.saveInvoice)
+	s.mux.HandleFunc("POST /api/check", s.checkInvoice)
+	s.mux.HandleFunc("GET /api/ocr", s.ocrStatus)
+	s.mux.HandleFunc("POST /api/ocr/install-vi", s.ocrInstall)
 	s.mux.HandleFunc("GET /api/invoices", s.listInvoices)
 	s.mux.HandleFunc("GET /api/invoices/{id}", s.getInvoice)
 	s.mux.HandleFunc("GET /api/invoices/{id}/file", s.invoiceFile)
@@ -142,80 +144,29 @@ func (s *Server) parse(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) parseFile(name string, data []byte) []Draft {
-	ext := strings.ToLower(filepath.Ext(name))
-	if ext == ".zip" {
-		return s.parseZip(name, data)
-	}
-	d := Draft{FileName: name}
-	var inv *model.Invoice
-	var err error
-	switch ext {
-	case ".xml":
-		inv, d.Warnings, err = einvoice.ParseXML(data)
-	case ".pdf":
-		inv, d.Warnings, err = einvoice.ParsePDF(data)
-	default:
-		err = errors.New("chỉ hỗ trợ file .xml, .pdf hoặc .zip (ảnh chụp: hãy dùng file XML của hóa đơn)")
-	}
-	if err != nil {
-		d.Error = err.Error()
-		return []Draft{d}
-	}
-	d.Token = newToken() + ext
-	if err := os.WriteFile(filepath.Join(s.dataDir, "inbox", d.Token), data, 0o644); err != nil {
-		d.Error = err.Error()
-		return []Draft{d}
-	}
-	c := classify.Classifier{Rule: s.st.RuleLookup, KnownItem: s.st.KnownItem}
-	for i := range inv.Lines {
-		inv.Lines[i].Kind, inv.Lines[i].Reason = c.Classify(inv.Lines[i])
-	}
-	d.Invoice = inv
-	d.DuplicateOf = s.st.FindDuplicate(inv)
-	if d.Warnings == nil {
-		d.Warnings = []string{}
-	}
-	return []Draft{d}
-}
-
-// parseZip reads the XML files of a zip; PDFs are used only when the zip has no XML.
-func (s *Server) parseZip(name string, data []byte) []Draft {
-	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
-	if err != nil {
-		return []Draft{{FileName: name, Error: "file ZIP lỗi: " + err.Error()}}
-	}
-	var xmls, pdfs []*zip.File
-	for _, f := range zr.File {
-		switch strings.ToLower(filepath.Ext(f.Name)) {
-		case ".xml":
-			xmls = append(xmls, f)
-		case ".pdf":
-			pdfs = append(pdfs, f)
-		}
-	}
-	if len(xmls) == 0 {
-		xmls = pdfs
-	}
 	var out []Draft
-	for _, f := range xmls {
-		rc, err := f.Open()
-		if err != nil {
+	c := classify.Classifier{Rule: s.st.RuleLookup, KnownItem: s.st.KnownItem}
+	for _, p := range einvoice.ParseAny(name, data) {
+		d := Draft{FileName: p.Name, Warnings: p.Warnings}
+		if p.Err != nil {
+			d.Error = p.Err.Error()
+			out = append(out, d)
 			continue
 		}
-		b, err := io.ReadAll(io.LimitReader(rc, 64<<20))
-		rc.Close()
-		if err != nil {
+		d.Token = newToken() + p.Ext
+		if err := os.WriteFile(filepath.Join(s.dataDir, "inbox", d.Token), p.Data, 0o644); err != nil {
+			d.Error = err.Error()
+			out = append(out, d)
 			continue
 		}
-		ds := s.parseFile(name+" › "+filepath.Base(f.Name), b)
-		for _, d := range ds {
-			if d.Error != einvoice.ErrNotInvoiceXML.Error() {
-				out = append(out, d)
-			}
+		for i := range p.Invoice.Lines {
+			l := &p.Invoice.Lines[i]
+			l.Kind, l.Reason, l.Certain = c.Classify(*l)
 		}
-	}
-	if len(out) == 0 {
-		return []Draft{{FileName: name, Error: "trong file ZIP không có hóa đơn XML/PDF"}}
+		s.verify(p.Invoice)
+		d.Invoice = p.Invoice
+		d.DuplicateOf = s.st.FindDuplicate(p.Invoice)
+		out = append(out, d)
 	}
 	return out
 }
@@ -258,6 +209,11 @@ func (s *Server) saveInvoice(w http.ResponseWriter, r *http.Request) {
 		l.Name, l.Unit = textutil.Clean(l.Name), textutil.Clean(l.Unit)
 	}
 	recomputeTotals(inv)
+	s.reverify(inv)
+	if probs := einvoice.Problems(inv); len(probs) > 0 {
+		writeErr(w, http.StatusBadRequest, errors.New("Chưa lưu được: "+strings.Join(probs, "; ")))
+		return
+	}
 	var src string
 	if tokenRe.MatchString(req.Token) {
 		src = filepath.Join(s.dataDir, "inbox", req.Token)
@@ -275,6 +231,65 @@ func (s *Server) saveInvoice(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	writeJSON(w, map[string]any{"id": id, "receiptNo": inv.ReceiptNo})
+}
+
+func (s *Server) ocrStatus(w http.ResponseWriter, _ *http.Request) {
+	langs, err := ocr.Languages()
+	vi := false
+	for _, l := range langs {
+		vi = vi || strings.HasPrefix(l, "vi")
+	}
+	out := map[string]any{"langs": langs, "vietnamese": vi}
+	if err != nil {
+		out["error"] = err.Error()
+	}
+	writeJSON(w, out)
+}
+
+func (s *Server) ocrInstall(w http.ResponseWriter, _ *http.Request) {
+	if err := ocr.InstallVietnamese(); err != nil {
+		writeErr(w, http.StatusInternalServerError, err)
+		return
+	}
+	writeJSON(w, map[string]bool{"ok": true})
+}
+
+// verify runs all checks on a freshly parsed invoice.
+func (s *Server) verify(inv *model.Invoice) {
+	einvoice.Verify(inv)
+	if set, err := s.st.Settings(); err == nil {
+		einvoice.CheckBuyer(inv, set["company_tax"])
+	}
+}
+
+// reverify re-checks an invoice edited in the browser: classification certainty is
+// recomputed here, never trusted from the client.
+func (s *Server) reverify(inv *model.Invoice) {
+	c := classify.Classifier{Rule: s.st.RuleLookup, KnownItem: s.st.KnownItem}
+	for i := range inv.Lines {
+		l := &inv.Lines[i]
+		k, _, certain := c.Classify(*l)
+		l.Certain = l.UserSet || (certain && k == l.Kind)
+	}
+	if inv.Source == "" {
+		inv.Source = model.SourceOCR // nguồn không rõ: kiểm tra chặt nhất
+	}
+	s.verify(inv)
+}
+
+// checkInvoice re-verifies the review screen's current state and returns issues and problems.
+func (s *Server) checkInvoice(w http.ResponseWriter, r *http.Request) {
+	var inv model.Invoice
+	if err := json.NewDecoder(io.LimitReader(r.Body, 8<<20)).Decode(&inv); err != nil {
+		writeErr(w, http.StatusBadRequest, err)
+		return
+	}
+	s.reverify(&inv)
+	lines := make([]map[string]any, len(inv.Lines))
+	for i, l := range inv.Lines {
+		lines[i] = map[string]any{"issues": l.Issues, "certain": l.Certain}
+	}
+	writeJSON(w, map[string]any{"issues": inv.Issues, "lines": lines, "problems": einvoice.Problems(&inv)})
 }
 
 // recomputeTotals keeps stated totals unless the edited lines no longer match them.

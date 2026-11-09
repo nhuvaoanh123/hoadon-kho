@@ -55,7 +55,7 @@ func TestUploadSaveExport(t *testing.T) {
 	if w.Code != 200 || !strings.Contains(w.Body.String(), "PN00001") {
 		t.Fatalf("save: %d %s", w.Code, w.Body)
 	}
-	if _, err := os.Stat(filepath.Join(dir, "files", "0100000001_1C25MAU_3344.xml")); err != nil {
+	if _, err := os.Stat(filepath.Join(dir, "files", "0100000003_1C25MAU_3344.xml")); err != nil {
 		t.Errorf("original not kept: %v", err)
 	}
 	w = do(t, h, "POST", "/api/invoices", body, "application/json")

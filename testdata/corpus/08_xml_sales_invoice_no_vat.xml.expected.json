@@ -1,0 +1,31 @@
+{
+  "should_parse": true,
+  "form": "2",
+  "serial": "C25AAK",
+  "number": "00000010",
+  "date": "2025-10-08",
+  "seller_tax": "0100000001",
+  "line_count": 2,
+  "lines": [
+    {
+      "name": "Xăng RON 95-III",
+      "unit": "Lít",
+      "qty": 200,
+      "amount": 4700000,
+      "vat_rate": null,
+      "kind": "goods"
+    },
+    {
+      "name": "Dầu nhớt động cơ",
+      "unit": "Lít",
+      "qty": 20,
+      "amount": 1700000,
+      "vat_rate": null,
+      "kind": "goods"
+    }
+  ],
+  "total_before_vat": 6400000,
+  "total_vat": 0,
+  "total": 6400000,
+  "note": "Hóa đơn bán hàng (direct method, KHMSHDon=2): no TSuat on lines, no THTTLTSuat block, TgTThue omitted/zero."
+}

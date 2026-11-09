@@ -1,0 +1,39 @@
+{
+  "should_parse": true,
+  "form": "1",
+  "serial": "C25BBB",
+  "number": "00000013",
+  "date": "2025-10-03",
+  "seller_tax": "0100000001",
+  "line_count": 3,
+  "lines": [
+    {
+      "name": "Thiết bị lưu điện UPS công suất lớn dùng cho trung tâm dữ liệu loại A (hàng nhập khẩu nguyên chiếc)",
+      "unit": "Cái",
+      "qty": 2,
+      "amount": 37000000,
+      "vat_rate": "10%",
+      "kind": "goods"
+    },
+    {
+      "name": "Dịch vụ lắp đặt, cấu hình và kiểm thử hệ thống lưu điện tại hiện trường khách hàng",
+      "unit": "Lần",
+      "qty": 1,
+      "amount": 3200000,
+      "vat_rate": "10%",
+      "kind": "service"
+    },
+    {
+      "name": "Cáp nguồn chuyên dụng chịu nhiệt cho tủ điện công nghiệp loại cao cấp nhiều lớp cách điện",
+      "unit": "Mét",
+      "qty": 50,
+      "amount": 4750000,
+      "vat_rate": "10%",
+      "kind": "goods"
+    }
+  ],
+  "total_before_vat": 44950000,
+  "total_vat": 4495000,
+  "total": 49445000,
+  "note": "PDF, standard layout matching the sample column order; item names are long and wrap across 2-3 lines in the rendered table."
+}

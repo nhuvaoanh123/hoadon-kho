@@ -1,0 +1,39 @@
+{
+  "should_parse": true,
+  "form": "1",
+  "serial": "C25CAA",
+  "number": "00000019",
+  "date": "2025-10-19",
+  "seller_tax": "0100000001",
+  "line_count": 3,
+  "lines": [
+    {
+      "name": "Tủ lạnh inverter 300L",
+      "unit": "Cái",
+      "qty": 3,
+      "amount": 26700000,
+      "vat_rate": "10%",
+      "kind": "goods"
+    },
+    {
+      "name": "Máy giặt lồng ngang 9kg",
+      "unit": "Cái",
+      "qty": 2,
+      "amount": 14400000,
+      "vat_rate": "10%",
+      "kind": "goods"
+    },
+    {
+      "name": "Dịch vụ vận chuyển và lắp đặt tại nhà",
+      "unit": "Lần",
+      "qty": 1,
+      "amount": 500000,
+      "vat_rate": "10%",
+      "kind": "service"
+    }
+  ],
+  "total_before_vat": 41600000,
+  "total_vat": 4160000,
+  "total": 45760000,
+  "note": "File extension is .txt but content is the full TT78 invoice XML (same invoice as 19a); parser must sniff content, not trust the extension."
+}

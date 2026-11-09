@@ -77,20 +77,37 @@ async function upload(files) {
   } catch (e) { toast(e.message, true); }
 }
 
-function field(label, obj, key, opts = {}) {
-  return h("label", { class: opts.wide ? "wide" : "" }, label,
-    h("input", { value: obj[key] ?? "", type: opts.type || "text", oninput: e => (obj[key] = e.target.value) }));
+const SOURCES = {
+  xml: "XML hóa đơn điện tử — dữ liệu gốc, chính xác tuyệt đối",
+  pdf: "PDF — đọc từ chữ in, đã đối chiếu bằng phép tính",
+  html: "HTML — đọc từ trang hiển thị, đã đối chiếu bằng phép tính",
+  ocr: "ẢNH (OCR) — chỉ là bản gợi ý, phải đối chiếu từng dòng với bản gốc",
+  "pdf-raw": "PDF lỗi font — thứ tự chữ phải dựng lại, phải đối chiếu từng dòng với bản gốc",
+};
+
+// unresolved counts what still blocks saving (the server enforces the same rule).
+function unresolved(inv) {
+  let n = 0;
+  const count = (issues, confirmed) => (issues || []).forEach(i => { if (i.block || !confirmed) n++; });
+  count(inv.issues, inv.confirmed);
+  inv.lines.forEach(l => count(l.issues, l.confirmed));
+  return n;
 }
 
-function numInput(obj, key, after) {
-  return h("input", { class: "num", type: "number", step: "any", value: obj[key] ?? 0,
-    oninput: e => { obj[key] = parseFloat(e.target.value) || 0; after?.(); } });
+function issueList(issues, confirmed, onConfirm) {
+  if (!issues || !issues.length) return null;
+  const soft = issues.filter(i => !i.block);
+  return h("div", { class: "issues" },
+    issues.map(i => h("div", { class: i.block ? "blk" : "chk" }, (i.block ? "✖ Phải sửa: " : "⚠ ") + i.text)),
+    soft.length ? h("label", { class: "confirm" },
+      h("input", { type: "checkbox", checked: !!confirmed, onchange: e => onConfirm(e.target.checked) }),
+      " Tôi đã đối chiếu với hóa đơn gốc") : null);
 }
 
 function draftCard(d) {
   const card = h("div", { class: "draft" });
   if (d.error) {
-    card.append(h("h3", {}, d.fileName), h("div", { class: "err" }, d.error),
+    add(card, h("h3", {}, d.fileName), h("div", { class: "err" }, d.error),
       h("div", { class: "actions" }, h("button", { class: "secondary", onclick: () => card.remove() }, "Đóng")));
     return card;
   }
@@ -98,7 +115,13 @@ function draftCard(d) {
   const counts = h("div");
   const body = h("tbody");
   const totals = h("tfoot");
-  const render = () => {
+  const invBox = h("div");
+  const status = h("div", { class: "status" });
+  const save = h("button", {}, "Lưu & nhập kho");
+  const rows = [];
+  let timer;
+
+  const paint = () => {
     const c = { goods: 0, service: 0, discount: 0 };
     let sum = 0, vat = 0;
     inv.lines.forEach(l => {
@@ -112,66 +135,101 @@ function draftCard(d) {
       h("span", { class: "badge g" }, `${c.goods} hàng hóa`),
       h("span", { class: "badge s" }, `${c.service} dịch vụ`),
       c.discount ? h("span", { class: "badge d" }, `${c.discount} chiết khấu`) : null);
-    totals.replaceChildren(h("tr", {}, h("td", { colSpan: 6 }, "Cộng"), h("td", { class: "n" }, money(sum)),
+    totals.replaceChildren(h("tr", {}, h("td", { colSpan: 5 }, "Cộng các dòng"), h("td", { class: "n" }, money(sum)),
       h("td"), h("td", { class: "n" }, money(vat)), h("td", { colSpan: 2 }, "Thanh toán: " + money(sum + vat))));
+    invBox.replaceChildren();
+    add(invBox, issueList(inv.issues, inv.confirmed, v => { inv.confirmed = v; paint(); }));
+    rows.forEach(({ l, tr, cell }) => {
+      tr.className = l.kind + (l.issues && l.issues.length ? (l.issues.some(i => i.block) || !l.confirmed ? " bad" : " ok") : "");
+      cell.replaceChildren();
+      add(cell, issueList(l.issues, l.confirmed, v => { l.confirmed = v; paint(); }), h("div", { class: "reason" }, l.reason));
+    });
+    const n = unresolved(inv);
+    status.className = "status " + (n || d.duplicateOf ? "no" : "yes");
+    status.textContent = d.duplicateOf ? "Hóa đơn này đã được nhập trước đó: không lưu lại để tránh trùng kho."
+      : n ? `Còn ${n} điểm chưa kiểm chứng được: sửa các dòng ✖ và đánh dấu đã đối chiếu các dòng ⚠ rồi mới lưu.`
+        : "✔ Mọi số liệu đã khớp hoặc đã được bạn xác nhận: có thể lưu.";
+    save.disabled = n > 0 || d.duplicateOf > 0;
   };
+
+  // recheck asks the server to re-verify after an edit; edited lines lose their confirmation.
+  const recheck = () => {
+    clearTimeout(timer);
+    timer = setTimeout(async () => {
+      try {
+        const r = await api("POST", "/api/check", inv);
+        inv.issues = r.issues || [];
+        r.lines.forEach((x, i) => { inv.lines[i].issues = x.issues || []; inv.lines[i].certain = x.certain; });
+        paint();
+      } catch (e) { toast(e.message, true); }
+    }, 350);
+  };
+  const edited = l => { if (l) l.confirmed = false; else inv.confirmed = false; recheck(); };
+
   const lineRow = l => {
     const tr = h("tr", { class: l.kind });
-    const sel = h("select", { onchange: e => { l.kind = e.target.value; l.userSet = true; tr.className = l.kind; render(); } },
+    const cell = h("td", { class: "issuecell" });
+    const inp = (key, attrs = {}) => h("input", { value: l[key] ?? "", title: l[key] ?? "", ...attrs,
+      oninput: e => { l[key] = attrs.type === "number" ? (parseFloat(e.target.value) || 0) : e.target.value; edited(l); } });
+    const num = key => inp(key, { type: "number", step: "any", class: "num" });
+    const sel = h("select", { onchange: e => { l.kind = e.target.value; l.userSet = true; edited(l); } },
       Object.entries(KINDS).map(([k, v]) => h("option", { value: k, selected: k === l.kind }, v)));
     tr.append(
       h("td", {}, l.stt),
-      h("td", { style: "min-width:300px" }, h("input", { value: l.name, title: l.name, oninput: e => (l.name = e.target.value) })),
-      h("td", { style: "width:70px" }, h("input", { value: l.unit, oninput: e => (l.unit = e.target.value) })),
-      h("td", { style: "width:90px" }, numInput(l, "qty")),
-      h("td", { style: "width:120px" }, numInput(l, "price")),
-      h("td", { style: "width:130px" }, numInput(l, "amount", render)),
-      h("td", { class: "n" }, money(l.amount)),
-      h("td", { style: "width:70px" }, h("input", { value: l.vatRate, oninput: e => (l.vatRate = e.target.value) })),
-      h("td", { style: "width:110px" }, numInput(l, "vatAmount", render)),
+      h("td", { style: "min-width:260px" }, inp("name")),
+      h("td", { style: "width:70px" }, inp("unit")),
+      h("td", { style: "width:90px" }, num("qty")),
+      h("td", { style: "width:120px" }, num("price")),
+      h("td", { style: "width:130px" }, num("amount")),
+      h("td", { style: "width:70px" }, inp("vatRate")),
+      h("td", { style: "width:110px" }, num("vatAmount")),
       h("td", {}, sel),
-      h("td", { class: "reason" }, l.reason));
+      cell);
+    rows.push({ l, tr, cell });
     return tr;
   };
   const addLine = () => {
-    const l = { stt: inv.lines.length + 1, nature: 1, name: "", unit: "", qty: 1, price: 0, amount: 0, vatRate: "8%", vatAmount: 0, kind: "goods", reason: "Thêm tay", userSet: true };
+    const l = { stt: inv.lines.length + 1, nature: 1, name: "", unit: "", qty: 1, price: 0, amount: 0, vatRate: "8%",
+      vatAmount: 0, kind: "goods", reason: "Dòng thêm tay", userSet: true, issues: [] };
     inv.lines.push(l);
     body.append(lineRow(l));
-    render();
+    edited(l);
   };
   inv.lines.forEach(l => body.append(lineRow(l)));
-  render();
 
-  const save = h("button", {}, "Lưu & nhập kho");
-  save.disabled = d.duplicateOf > 0;
   save.onclick = async () => {
     save.disabled = true;
     try {
       const r = await api("POST", "/api/invoices", { token: d.token, invoice: inv });
       toast(r.receiptNo ? `Đã lưu hóa đơn số ${inv.number}, phiếu nhập kho ${r.receiptNo}` : `Đã lưu hóa đơn số ${inv.number} (không có hàng hóa nhập kho)`);
       card.remove();
-    } catch (e) { toast(e.message, true); save.disabled = false; }
+    } catch (e) { toast(e.message, true); paint(); }
   };
 
+  const hf = (label, obj, key, opts = {}) => h("label", { class: opts.wide ? "wide" : "" }, label,
+    h("input", { value: obj[key] ?? "", type: opts.type || "text", oninput: e => { obj[key] = e.target.value; edited(null); } }));
   add(card,
-    h("h3", {}, `${d.fileName}`),
+    h("h3", {}, d.fileName),
+    h("div", { class: "source src-" + inv.source }, "Nguồn: " + (SOURCES[inv.source] || inv.source)),
     h("div", { class: "head" },
-      field("Ký hiệu mẫu số", inv, "form"), field("Ký hiệu", inv, "serial"), field("Số hóa đơn", inv, "number"),
-      field("Ngày hóa đơn", inv, "date", { type: "date" }),
-      field("Người bán", inv.seller, "name", { wide: true }), field("MST người bán", inv.seller, "taxCode"),
-      field("Tiền tệ", inv, "currency")),
-    d.duplicateOf ? h("div", { class: "err" }, "Hóa đơn này đã được nhập trước đó, không lưu lại để tránh trùng kho.") : null,
+      hf("Ký hiệu mẫu số", inv, "form"), hf("Ký hiệu", inv, "serial"), hf("Số hóa đơn", inv, "number"),
+      hf("Ngày hóa đơn", inv, "date", { type: "date" }),
+      hf("Người bán", inv.seller, "name", { wide: true }), hf("MST người bán", inv.seller, "taxCode"),
+      hf("MST người mua", inv.buyer, "taxCode"), hf("Tiền tệ", inv, "currency")),
     (d.warnings || []).map(w => h("div", { class: "warn" }, w)),
+    invBox,
     counts,
     h("table", { class: "grid" },
-      h("thead", {}, h("tr", {}, ["STT", "Tên hàng hóa, dịch vụ", "ĐVT", "Số lượng", "Đơn giá", "Thành tiền", "", "Thuế suất", "Tiền thuế", "Phân loại", "Lý do"]
-        .map((t, i) => h("th", { class: [3, 4, 5, 6, 8].includes(i) ? "n" : "" }, t)))),
+      h("thead", {}, h("tr", {}, ["STT", "Tên hàng hóa, dịch vụ", "ĐVT", "Số lượng", "Đơn giá", "Thành tiền", "Thuế suất", "Tiền thuế", "Phân loại", "Kiểm chứng"]
+        .map((t, i) => h("th", { class: [3, 4, 5, 7].includes(i) ? "n" : "" }, t)))),
       body, totals),
+    status,
     h("div", { class: "actions" },
-      h("span", { class: "muted" }, "Xanh lá = vào kho, xanh dương = chi phí. Đổi phân loại thì lần sau app tự nhớ."),
+      h("span", { class: "muted" }, "Xanh lá = vào kho, xanh dương = chi phí. Phân loại bạn chọn sẽ được nhớ cho lần sau."),
       h("button", { class: "secondary", onclick: addLine }, "+ Thêm dòng"),
       h("button", { class: "secondary", onclick: () => card.remove() }, "Bỏ qua"),
       save));
+  paint();
   return card;
 }
 
@@ -303,8 +361,23 @@ loaders.settings = async () => {
     $$("#settings input[name]").forEach(i => (i.value = s[i.name] ?? ""));
     $("#data-dir").textContent = s.data_dir;
     $("#version").textContent = s.version;
+    ocrStatus();
   } catch (e) { toast(e.message, true); }
 };
+async function ocrStatus() {
+  try {
+    const o = await api("GET", "/api/ocr");
+    $("#ocr-status").textContent = o.error ? "Không dùng được OCR: " + o.error
+      : o.vietnamese ? "✔ Đã có OCR tiếng Việt: ảnh chụp đọc được đủ dấu."
+        : `Chưa có OCR tiếng Việt (đang có: ${(o.langs || []).join(", ") || "không"}): tên hàng đọc từ ảnh sẽ mất dấu.`;
+    $("#ocr-install").hidden = !!(o.vietnamese || o.error);
+  } catch (e) { $("#ocr-status").textContent = e.message; }
+}
+$("#ocr-install").onclick = async () => {
+  try { await api("POST", "/api/ocr/install-vi"); toast("Đã mở cửa sổ cài đặt. Cài xong, mở lại trang Cài đặt để kiểm tra."); }
+  catch (e) { toast(e.message, true); }
+};
+
 $("#basis-pick").onchange = e => { if (e.target.value) $("#settings [name=form_basis]").value = e.target.value; };
 $("#settings").onsubmit = async ev => {
   ev.preventDefault();

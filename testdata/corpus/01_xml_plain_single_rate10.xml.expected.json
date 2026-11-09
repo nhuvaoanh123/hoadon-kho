@@ -1,0 +1,39 @@
+{
+  "should_parse": true,
+  "form": "1",
+  "serial": "C25AAA",
+  "number": "00000001",
+  "date": "2025-10-01",
+  "seller_tax": "0100000001",
+  "line_count": 3,
+  "lines": [
+    {
+      "name": "Bàn làm việc gỗ công nghiệp 1m2",
+      "unit": "Cái",
+      "qty": 10,
+      "amount": 15000000,
+      "vat_rate": "10%",
+      "kind": "goods"
+    },
+    {
+      "name": "Ghế xoay văn phòng lưng lưới",
+      "unit": "Cái",
+      "qty": 10,
+      "amount": 8500000,
+      "vat_rate": "10%",
+      "kind": "goods"
+    },
+    {
+      "name": "Tủ hồ sơ 4 ngăn",
+      "unit": "Cái",
+      "qty": 4,
+      "amount": 8800000,
+      "vat_rate": "10%",
+      "kind": "goods"
+    }
+  ],
+  "total_before_vat": 32300000,
+  "total_vat": 3230000,
+  "total": 35530000,
+  "note": "Plain TT78 single-rate (10%) goods-only invoice, baseline/happy-path case."
+}

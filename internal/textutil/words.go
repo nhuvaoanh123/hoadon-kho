@@ -1,4 +1,4 @@
-package export
+package textutil
 
 import (
 	"math"
@@ -75,4 +75,46 @@ func MoneyWords(v float64) string {
 	}
 	r := []rune(out)
 	return strings.ToUpper(string(r[0])) + string(r[1:])
+}
+
+var wordAlias = map[string]string{"ngan": "nghin", "le": "linh", "tu": "bon", "lam": "nam", "chan": "", "dong": "", "vnd": "", "va": ""}
+
+// SameMoneyWords reports whether printed words (with or without diacritics) spell v.
+func SameMoneyWords(printed string, v float64) bool {
+	norm := func(s string) string {
+		var out []string
+		for _, w := range strings.Fields(Words(Fold(s))) {
+			if a, ok := wordAlias[w]; ok {
+				w = a
+			}
+			if w != "" {
+				out = append(out, w)
+			}
+		}
+		return strings.Join(out, " ")
+	}
+	p := norm(printed)
+	return p != "" && p == norm(MoneyWords(v))
+}
+
+// ValidMST checks a Vietnamese tax code: 10 digits with a mod-11 check digit, optional "-NNN" branch.
+func ValidMST(s string) bool {
+	s = strings.ReplaceAll(strings.TrimSpace(s), " ", "")
+	if i := strings.IndexByte(s, '-'); i >= 0 {
+		branch := s[i+1:]
+		if len(branch) != 3 || strings.Trim(branch, "0123456789") != "" {
+			return false
+		}
+		s = s[:i]
+	}
+	if len(s) != 10 || strings.Trim(s, "0123456789") != "" {
+		return false
+	}
+	weights := []int{31, 29, 23, 19, 17, 13, 7, 5, 3}
+	sum := 0
+	for i, w := range weights {
+		sum += int(s[i]-'0') * w
+	}
+	check := 10 - sum%11
+	return check < 10 && int(s[9]-'0') == check
 }

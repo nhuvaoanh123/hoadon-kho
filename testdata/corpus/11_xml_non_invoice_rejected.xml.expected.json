@@ -1,0 +1,4 @@
+{
+  "should_parse": false,
+  "note": "Not an invoice: this is a tax-declaration-style document (ToKhai), no HDon/TDiep root; parser must reject it."
+}

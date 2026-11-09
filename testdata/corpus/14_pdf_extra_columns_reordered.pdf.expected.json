@@ -1,0 +1,39 @@
+{
+  "should_parse": true,
+  "form": "1",
+  "serial": "C25BCC",
+  "number": "00000014",
+  "date": "2025-10-14",
+  "seller_tax": "0100000001",
+  "line_count": 3,
+  "lines": [
+    {
+      "name": "Sơn nước ngoại thất cao cấp 18L",
+      "unit": "Thùng",
+      "qty": 6,
+      "amount": 11100000,
+      "vat_rate": "10%",
+      "kind": "goods"
+    },
+    {
+      "name": "Bột trét tường chống thấm",
+      "unit": "Bao",
+      "qty": 20,
+      "amount": 3600000,
+      "vat_rate": "8%",
+      "kind": "goods"
+    },
+    {
+      "name": "Dịch vụ thi công sơn hoàn thiện",
+      "unit": "M2",
+      "qty": 300,
+      "amount": 13500000,
+      "vat_rate": "10%",
+      "kind": "service"
+    }
+  ],
+  "total_before_vat": 28200000,
+  "total_vat": 2748000,
+  "total": 30948000,
+  "note": "PDF with extra columns (Mã hàng, Chiết khấu) and numeric columns reordered vs. the standard layout (rate/tax before qty/price)."
+}

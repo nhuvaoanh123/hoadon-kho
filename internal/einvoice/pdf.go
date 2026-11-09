@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"math"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"unicode"
@@ -25,22 +27,35 @@ func ParsePDF(data []byte) (inv *model.Invoice, warns []string, err error) {
 			inv, warns, err = nil, nil, fmt.Errorf("không đọc được PDF: %v", r)
 		}
 	}()
-	lines, err := PDFLines(data)
-	if err != nil {
-		return nil, nil, err
+	lines, scrambled, err := readPDF(data)
+	if err == nil && len(strings.TrimSpace(strings.Join(lines, ""))) < 20 {
+		err = ErrNoText
 	}
-	if len(strings.TrimSpace(strings.Join(lines, ""))) < 20 {
-		return nil, nil, ErrNoText
-	}
-	inv, warns, err = ParseText(lines)
 	if err == nil {
-		warns = append([]string{"Đọc từ PDF: hãy kiểm tra kỹ từng dòng trước khi lưu (XML luôn chính xác hơn)"}, warns...)
+		if inv, warns, err = ParseText(lines); err == nil {
+			inv.Source = model.SourcePDF
+			if scrambled {
+				inv.Source = model.SourcePDFRaw
+			}
+			warns = append([]string{"Đọc từ PDF: hãy kiểm tra kỹ từng dòng trước khi lưu (XML luôn chính xác hơn)"}, warns...)
+			return inv, warns, nil
+		}
 	}
-	return inv, warns, err
+	// Không có chữ hoặc chữ lỗi font: thử OCR trang PDF.
+	if oinv, owarns, oerr := ParseImage(data, ".pdf"); oerr == nil {
+		return oinv, owarns, nil
+	}
+	return nil, nil, err
 }
 
 // PDFLines returns the text of a PDF as visual lines, top to bottom.
-func PDFLines(data []byte) (lines []string, err error) {
+func PDFLines(data []byte) ([]string, error) {
+	lines, _, err := readPDF(data)
+	return lines, err
+}
+
+// readPDF also reports whether any page needed the glyph fallback (text order unreliable).
+func readPDF(data []byte) (lines []string, scrambled bool, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			lines, err = nil, fmt.Errorf("không đọc được PDF: %v", r)
@@ -48,8 +63,9 @@ func PDFLines(data []byte) (lines []string, err error) {
 	}()
 	r, err := pdf.NewReader(bytes.NewReader(data), int64(len(data)))
 	if err != nil {
-		return nil, fmt.Errorf("không đọc được PDF: %w", err)
+		return nil, false, fmt.Errorf("không đọc được PDF: %w", err)
 	}
+	lastFlip := false
 	for i := 1; i <= r.NumPage(); i++ {
 		p := r.Page(i)
 		if p.V.IsNull() {
@@ -59,9 +75,25 @@ func PDFLines(data []byte) (lines []string, err error) {
 		if err != nil {
 			continue
 		}
-		lines = append(lines, topDown(joinRows(rows))...)
+		page := joinRows(rows)
+		if n := len(strings.Join(page, "")); len(page) <= 3 && n > 200 {
+			if g := glyphLines(p); len(g) > len(page) {
+				page, scrambled = g, true
+			}
+		}
+		flip, known := flipped(page)
+		if !known {
+			flip = lastFlip
+		}
+		lastFlip = flip
+		if flip {
+			for a, b := 0, len(page)-1; a < b; a, b = a+1, b-1 {
+				page[a], page[b] = page[b], page[a]
+			}
+		}
+		lines = append(lines, page...)
 	}
-	return lines, nil
+	return lines, scrambled, nil
 }
 
 var (
@@ -69,8 +101,8 @@ var (
 	footMarks = []string{"tổng cộng", "tổng tiền thanh toán", "người mua hàng", "ký bởi"}
 )
 
-// topDown reverses a page whose y axis is flipped (header found below the footer).
-func topDown(ls []string) []string {
+// flipped reports whether a page's y axis is inverted: header below footer, or item numbers descending.
+func flipped(ls []string) (flip, known bool) {
 	first := func(marks []string, last bool) int {
 		at := -1
 		for i, l := range ls {
@@ -84,13 +116,29 @@ func topDown(ls []string) []string {
 		return at
 	}
 	h, f := first(headMarks, false), first(footMarks, true)
-	if h < 0 || f < 0 || h < f {
-		return ls
+	if h >= 0 && f >= 0 {
+		return h > f, true
 	}
-	for i, j := 0, len(ls)-1; i < j; i, j = i+1, j-1 {
-		ls[i], ls[j] = ls[j], ls[i]
+	var stts []int
+	for _, l := range ls {
+		if fs := strings.Fields(l); len(fs) >= 4 {
+			if n, err := strconv.Atoi(fs[0]); err == nil && n > 0 {
+				stts = append(stts, n)
+			}
+		}
 	}
-	return ls
+	up, down := 0, 0
+	for i := 1; i < len(stts); i++ {
+		if stts[i] == stts[i-1]+1 {
+			up++
+		} else if stts[i] == stts[i-1]-1 {
+			down++
+		}
+	}
+	if up+down >= 2 {
+		return down > up, true
+	}
+	return false, false
 }
 
 // joinRows merges rows whose baselines differ by under 2pt and joins each row's runs.
@@ -147,39 +195,73 @@ func glued(a, b pdf.Text) bool {
 }
 
 var (
-	reSerial  = regexp.MustCompile(`(?i)k[ýy] hi[ệe]u[^:]*:\s*([0-9][A-Z0-9]{5,7})\b`)
+	reSerial  = regexp.MustCompile(`(?i)k[ýy] hi[ệe]u[^:]*:\s*([12]?[CK][0-9]{2}[A-Z]{2,4})\b`)
 	reNumber  = regexp.MustCompile(`(?i)\bs[ốo]\s*(?:h[óo]a đ[ơo]n)?\s*(?:\(\s*no\.?\s*\))?\s*:\s*0*([0-9]{1,8})\b`)
 	reDate    = regexp.MustCompile(`(?i)ng[àa]y\D{0,20}?(\d{1,2})\s*th[áa]ng\D{0,20}?(\d{1,2})\s*n[ăa]m\D{0,20}?(\d{4})`)
-	reTax     = regexp.MustCompile(`(?i)m[ãa] s[ốo] thu[ếe][^:]*:\s*([0-9][0-9 ]{8,13}[0-9](?:-[0-9]{3})?)`)
+	reTax     = regexp.MustCompile(`(?i)(?:m[ãa] s[ốo] thu[ếe]|\bmst\b)[^:0-9]{0,30}:?\s*([0-9][0-9 ]{8,13}[0-9](?:-[0-9]{3})?)`)
 	reCQT     = regexp.MustCompile(`(?i)m[ãa] (?:c[ủu]a )?cqt[^:]*:\s*([0-9A-F]{20,40})`)
-	reBuyer   = regexp.MustCompile(`(?i)t[êe]n đ[ơo]n v[ịi][^:]*:\s*(.+)`)
+	reBuyer   = regexp.MustCompile(`(?i)(?:t[êe]n đ[ơo]n v[ịi]|đ[ơo]n v[ịi] mua h[àa]ng)[^:]*:\s*(.+)`)
+	reNameEnd = regexp.MustCompile(`(?i)\s+(?:mst|m[ãa] s[ốo] thu[ếe]|tax code)\b.*$`)
+	reDateISO = regexp.MustCompile(`(?i)ng[àa]y[^0-9]{0,20}(20\d{2})-(\d{1,2})-(\d{1,2})\b`)
+	reDateDMY = regexp.MustCompile(`(?i)ng[àa]y[^0-9]{0,20}(\d{1,2})[/.-](\d{1,2})[/.-](20\d{2})\b`)
 	reSeller  = regexp.MustCompile(`(?i)(?:đ[ơo]n v[ịi] b[áa]n h[àa]ng|ng[ưu][ờo]i b[áa]n)[^:]*:\s*(.+)`)
 	reAddr    = regexp.MustCompile(`(?i)^đ[ịi]a ch[ỉi][^:]*:\s*(.+)`)
 	reCompany = regexp.MustCompile(`^(CÔNG TY|CTY|DOANH NGHIỆP|HỘ KINH DOANH|CHI NHÁNH|TẬP ĐOÀN|HỢP TÁC XÃ)\b`)
+	reSerial2 = regexp.MustCompile(`\b([12Il|])([CK]\d{2}[A-Z]{3})\b`)
+	reNumber2 = regexp.MustCompile(`(?i)\(no\.?\)\s*[:.]?\s*0*([0-9]{1,8})\b`)
+	reNumber3 = regexp.MustCompile(`\b0{2,}([1-9][0-9]{0,6})\b`)
+	reDate2   = regexp.MustCompile(`(?i)\(date\)\D{0,15}?(\d{1,2})\D{1,25}?(\d{1,2})\D{1,25}?(\d{4})`)
+	reDate3   = regexp.MustCompile(`\b(\d{1,2})/(\d{1,2})/(20\d{2})\b`)
+	reTax2    = regexp.MustCompile(`(?i)tax code\)?\s*[:.]?\s*([0-9][0-9 ]{8,13}[0-9](?:-[0-9]{3})?)`)
 	reRate    = regexp.MustCompile(`(?i)^(\d{1,2}(?:[.,]\d+)?%|KCT|KKKNT)$`)
 )
 
 // ParseText parses the text lines of a printed VAT invoice.
 func ParseText(lines []string) (*model.Invoice, []string, error) {
+	lines = vnNumbers(lines)
 	inv := &model.Invoice{Currency: "VND", ExRate: 1}
 	var warns []string
 	all := strings.Join(lines, "\n")
 	if m := reSerial.FindStringSubmatch(all); m != nil {
 		s := strings.ToUpper(m[1])
+		if s[0] == 'C' || s[0] == 'K' { // ký hiệu in không kèm số mẫu
+			s = defaultForm(all) + s
+		}
 		inv.Form, inv.Serial = s[:1], s[1:]
+	} else if m := reSerial2.FindStringSubmatch(all); m != nil {
+		inv.Form, inv.Serial = "1", m[2]
+		if m[1] == "2" {
+			inv.Form = "2"
+		}
 	}
-	if m := reNumber.FindStringSubmatch(all); m != nil {
-		inv.Number = m[1]
+	for _, re := range []*regexp.Regexp{reNumber, reNumber2, reNumber3} {
+		if m := re.FindStringSubmatch(all); m != nil {
+			inv.Number = m[1]
+			break
+		}
 	}
-	if m := reDate.FindStringSubmatch(all); m != nil {
+	for _, re := range []*regexp.Regexp{reDate, reDateISO, reDateDMY, reDate2, reDate3} {
+		m := re.FindStringSubmatch(all)
+		if m == nil {
+			continue
+		}
+		if re == reDateISO {
+			m = []string{m[0], m[3], m[2], m[1]}
+		}
 		d, _ := strconv.Atoi(m[1])
 		mo, _ := strconv.Atoi(m[2])
-		inv.Date = fmt.Sprintf("%s-%02d-%02d", m[3], mo, d)
+		if d >= 1 && d <= 31 && mo >= 1 && mo <= 12 {
+			inv.Date = fmt.Sprintf("%s-%02d-%02d", m[3], mo, d)
+			break
+		}
 	}
 	if m := reCQT.FindStringSubmatch(all); m != nil {
 		inv.TaxAuthCode = m[1]
 	}
 	taxes := reTax.FindAllStringSubmatch(all, -1)
+	if len(taxes) == 0 {
+		taxes = reTax2.FindAllStringSubmatch(all, -1)
+	}
 	if len(taxes) > 0 {
 		inv.Seller.TaxCode = strings.ReplaceAll(taxes[0][1], " ", "")
 	}
@@ -199,6 +281,8 @@ func ParseText(lines []string) (*model.Invoice, []string, error) {
 			addrs = append(addrs, reAddr.FindStringSubmatch(ln)[1])
 		}
 	}
+	inv.Seller.Name = reNameEnd.ReplaceAllString(inv.Seller.Name, "")
+	inv.Buyer.Name = reNameEnd.ReplaceAllString(inv.Buyer.Name, "")
 	if len(addrs) > 0 {
 		inv.Seller.Address = addrs[0]
 	}
@@ -206,20 +290,62 @@ func ParseText(lines []string) (*model.Invoice, []string, error) {
 		inv.Buyer.Address = addrs[len(addrs)-1]
 	}
 
-	stated := parseItems(lines, inv, &warns)
+	parseItems(lines, inv)
 	for _, need := range []struct{ v, name string }{{inv.Number, "số hóa đơn"}, {inv.Date, "ngày hóa đơn"}, {inv.Seller.TaxCode, "MST người bán"}} {
 		if need.v == "" {
 			warns = append(warns, "Không đọc được "+need.name+", hãy nhập tay")
 		}
 	}
 	if len(inv.Lines) == 0 {
-		return nil, nil, errors.New("không tìm thấy dòng hàng hóa nào trong PDF: hãy dùng file XML hoặc nhập tay")
+		return nil, nil, errors.New("không tìm thấy dòng hàng hóa nào: hãy dùng file XML hoặc nhập tay")
 	}
 	finishTotals(inv, 0, 0, 0, &warns)
-	if stated > 0 && abs(stated-inv.Total) > 1 {
-		warns = append(warns, fmt.Sprintf("Tổng thanh toán in trên hóa đơn (%s) khác tổng đọc được (%s): có thể thiếu dòng", money(stated), money(inv.Total)))
-	}
 	return inv, warns, nil
+}
+
+var (
+	reEnNum  = regexp.MustCompile(`^\d{1,3}(?:,\d{3})+(?:\.\d+)?$|^\d+\.\d{2}$`)
+	reVnNum  = regexp.MustCompile(`^\d{1,3}(?:\.\d{3})+(?:,\d+)?$|^\d+,\d{2}$`)
+	reNumTok = regexp.MustCompile(`^[\d.,]+$`)
+)
+
+// vnNumbers rewrites English-style numbers ("1,800,000.00") to Vietnamese style when the
+// document mostly uses them, so a lone "288,000" is not read as 288.
+func vnNumbers(lines []string) []string {
+	en, vn := 0, 0
+	for _, l := range lines {
+		for _, t := range strings.Fields(l) {
+			switch {
+			case reEnNum.MatchString(t):
+				en++
+			case reVnNum.MatchString(t):
+				vn++
+			}
+		}
+	}
+	if en <= vn {
+		return lines
+	}
+	swap := strings.NewReplacer(",", ".", ".", ",")
+	out := make([]string, len(lines))
+	for i, l := range lines {
+		f := strings.Fields(l)
+		for j, t := range f {
+			if reNumTok.MatchString(t) && strings.ContainsAny(t, "0123456789") {
+				f[j] = swap.Replace(t)
+			}
+		}
+		out[i] = strings.Join(f, " ")
+	}
+	return out
+}
+
+// defaultForm guesses the form number: 2 for hóa đơn bán hàng, else 1 (GTGT).
+func defaultForm(all string) string {
+	if strings.Contains(textutil.Fold(all), "hoa don ban hang") {
+		return "2"
+	}
+	return "1"
 }
 
 func isNum(s string) bool { _, ok := textutil.ParseNumber(s); return ok }
@@ -233,44 +359,55 @@ func hasLetter(s string) bool {
 	return false
 }
 
-var totalMarkers = []string{"tổng hợp", "cộng tiền hàng", "tổng cộng", "tổng tiền", "cộng tiền"}
+var (
+	totalMarkers = []string{"tong hop", "cong tien hang", "tong cong", "tong tien", "cong tien", "total", "tong so tien"}
+	headerWords  = []string{"gtgt", "thanh toan", "tien thue", "thue suat", "(total", "in words", "bang chu"}
+)
 
-// parseItems fills inv.Lines and returns the stated grand total (0 if not found).
-func parseItems(lines []string, inv *model.Invoice, warns *[]string) float64 {
-	start := 0
+// endOfTable reports whether a folded line starts the totals block below the item table;
+// column-header words count only once items were seen (headers repeat them).
+func endOfTable(low string, seenItems bool) bool {
+	for _, m := range totalMarkers {
+		if strings.HasPrefix(low, m) {
+			return true
+		}
+	}
+	if !seenItems {
+		return false
+	}
+	n := 0
+	for _, w := range headerWords {
+		if strings.Contains(low, w) {
+			n++
+		}
+	}
+	return n >= 2
+}
+
+// parseItems fills inv.Lines and inv.Stated (totals printed below the table).
+func parseItems(lines []string, inv *model.Invoice) {
+	start, hasCode := 0, false
 	for i, ln := range lines {
-		l := strings.ToLower(ln)
-		if strings.Contains(l, "stt") || strings.Contains(l, "tên hàng") {
+		l := textutil.Fold(ln)
+		if strings.Contains(l, "stt") || strings.Contains(l, "ten hang") || strings.Contains(l, "name of goods") {
 			start = i + 1
+			hasCode = strings.Contains(l, "ma hang") || strings.Contains(l, "ma hh") || strings.Contains(l, "ma vt") || strings.Contains(l, "item code")
 			break
 		}
 	}
 	var pending []string // dòng chữ bị xuống dòng, chưa biết thuộc dòng hàng nào
 	var heads []int      // số dòng tên nằm phía trên dòng số của từng mặt hàng
-	var stated float64
 	inTable := true
 	for _, ln := range lines[start:] {
-		low := strings.ToLower(ln)
-		if inTable {
-			for _, m := range totalMarkers {
-				if strings.HasPrefix(low, m) {
-					inTable = false
-				}
-			}
+		low := textutil.Fold(ln)
+		if inTable && endOfTable(low, len(inv.Lines) > 0) {
+			inTable = false
 		}
 		if !inTable {
-			if strings.HasPrefix(low, "tổng cộng") || strings.Contains(low, "tổng tiền thanh toán") || strings.Contains(low, "cộng tiền thanh toán") {
-				f := strings.Fields(ln)
-				for i := len(f) - 1; i >= 0; i-- {
-					if v, ok := textutil.ParseNumber(f[i]); ok && v > stated {
-						stated = v
-						break
-					}
-				}
-			}
+			statedLine(ln, low, &inv.Stated)
 			continue
 		}
-		l, ok := itemRow(ln)
+		l, ok := itemRow(ln, hasCode)
 		if !ok {
 			pending = append(pending, ln)
 			continue
@@ -294,10 +431,12 @@ func parseItems(lines []string, inv *model.Invoice, warns *[]string) float64 {
 			if tail > 0 {
 				prev := &inv.Lines[len(inv.Lines)-1]
 				prev.Name = textutil.Clean(prev.Name + " " + strings.Join(pending[:tail], " "))
+				prev.Wrapped = true
 			}
 		}
 		head := pending[min(tail, len(pending)):]
 		l.Name = textutil.Clean(strings.Join(head, " ") + " " + l.Name)
+		l.Wrapped = len(head) > 0
 		heads = append(heads, len(head))
 		pending = nil
 		inv.Lines = append(inv.Lines, l)
@@ -305,19 +444,49 @@ func parseItems(lines []string, inv *model.Invoice, warns *[]string) float64 {
 	if len(pending) > 0 && len(inv.Lines) > 0 {
 		prev := &inv.Lines[len(inv.Lines)-1]
 		prev.Name = textutil.Clean(prev.Name + " " + strings.Join(pending, " "))
+		prev.Wrapped = true
 	}
-	for _, l := range inv.Lines {
-		if l.Qty != 0 && l.Price != 0 && abs(l.Qty*l.Price-l.Amount) > 1+l.Amount*0.001 {
-			*warns = append(*warns, fmt.Sprintf("Dòng %d: số lượng × đơn giá khác thành tiền, hãy kiểm tra", l.STT))
-		}
-	}
-	return stated
 }
 
-// itemRow parses "STT name unit qty price amount [rate [vat]]".
-func itemRow(ln string) (model.Line, bool) {
+// statedLine picks printed totals and the amount in words from the block under the table.
+func statedLine(ln, low string, st *model.Stated) {
+	if i := strings.Index(low, "bang chu"); i >= 0 || strings.Contains(low, "in words") {
+		if j := strings.LastIndex(ln, ":"); j >= 0 {
+			st.Words = strings.TrimSpace(ln[j+1:])
+		}
+		return
+	}
+	if strings.Contains(low, "thue suat") || strings.Contains(low, "khong chiu thue") || strings.Contains(low, "khong ke khai") {
+		return // dòng tổng theo từng thuế suất
+	}
+	var nums []float64
+	for _, f := range strings.Fields(ln) {
+		if v, ok := textutil.ParseNumber(f); ok && v >= 100 {
+			nums = append(nums, v)
+		}
+	}
+	if len(nums) == 0 {
+		return
+	}
+	last := nums[len(nums)-1]
+	switch {
+	case strings.HasPrefix(low, "tong cong") || strings.Contains(low, "thanh toan") || strings.Contains(low, "(total)"):
+		if len(nums) >= 3 {
+			st.BeforeVAT, st.VAT = nums[len(nums)-3], nums[len(nums)-2]
+		}
+		st.Total = last
+	case strings.Contains(low, "tien thue"):
+		st.VAT = last
+	case strings.Contains(low, "tien hang") || strings.Contains(low, "chua co thue") || strings.Contains(low, "truoc thue"):
+		st.BeforeVAT = last
+	}
+}
+
+// itemRow parses "STT name [unit] qty price amount [rate] [vat]". Columns are
+// found by arithmetic (qty × price = amount, vat = amount × rate), not position.
+func itemRow(ln string, hasCode bool) (model.Line, bool) {
 	f := strings.Fields(ln)
-	if len(f) < 5 {
+	if len(f) < 3 {
 		return model.Line{}, false
 	}
 	stt, err := strconv.Atoi(f[0])
@@ -325,44 +494,188 @@ func itemRow(ln string) (model.Line, bool) {
 		return model.Line{}, false
 	}
 	end := len(f)
-	var tail []string // các ô số/thuế suất ở cuối dòng
-	for end > 1 && len(tail) < 5 && (isNum(f[end-1]) || reRate.MatchString(f[end-1])) {
-		tail = append([]string{f[end-1]}, tail...)
+	for end > 1 && len(f)-end < 8 && (isNum(f[end-1]) || isRate(f[end-1])) {
 		end--
 	}
-	rateAt := -1
-	for i, t := range tail {
-		if reRate.MatchString(t) && !isNum(t) {
-			rateAt = i
-		}
+	type cell struct {
+		v  float64
+		at int
 	}
-	var qty, price, amount, vat string
-	var rate string
-	switch {
-	case rateAt >= 3:
-		qty, price, amount, rate = tail[rateAt-3], tail[rateAt-2], tail[rateAt-1], tail[rateAt]
-		if rateAt+1 < len(tail) {
-			vat = tail[rateAt+1]
+	var nums []cell
+	rate, rateAt := "", -1
+	for i := end; i < len(f); i++ {
+		if isRate(f[i]) && !isNum(f[i]) {
+			rate, rateAt = f[i], i
+			continue
 		}
-	case rateAt < 0 && len(tail) >= 3:
-		qty, price, amount = tail[len(tail)-3], tail[len(tail)-2], tail[len(tail)-1]
-	default:
+		v, _ := textutil.ParseNumber(f[i])
+		nums = append(nums, cell{v, i})
+	}
+	if len(nums) < 2 && !(len(nums) == 1 && rate != "") {
 		return model.Line{}, false
 	}
-	if end < 2 || !hasLetter(f[end-1]) {
-		return model.Line{}, false
+	l := model.Line{STT: stt, Nature: 1, VATRate: textutil.NormRate(rate)}
+	qi, pi, ai := -1, -1, -1
+	for k := len(nums) - 1; k >= 2 && ai < 0; k-- {
+		for j := k - 1; j >= 1 && ai < 0; j-- {
+			for i := j - 1; i >= 0; i-- {
+				q, p, a := nums[i].v, nums[j].v, nums[k].v
+				if q > 0 && p > 0 && a > 0 && abs(q*p-a) <= max(1, a*0.0005) {
+					qi, pi, ai = i, j, k
+					break
+				}
+			}
+		}
 	}
-	l := model.Line{STT: stt, Nature: 1, Unit: f[end-1], Name: strings.Join(f[1:end-1], " "), VATRate: textutil.NormRate(rate)}
-	l.Qty, _ = textutil.ParseNumber(qty)
-	l.Price, _ = textutil.ParseNumber(price)
-	l.Amount, _ = textutil.ParseNumber(amount)
-	if v, ok := textutil.ParseNumber(vat); ok {
-		l.VATAmount = v
+	firstNum := nums[0].at
+	if ai >= 0 {
+		l.Qty, l.Price, l.Amount = nums[qi].v, nums[pi].v, nums[ai].v
+		firstNum = nums[qi].at
 	} else {
-		l.VATAmount = textutil.Round(l.Amount*textutil.ParseRate(l.VATRate), 0)
+		// Không khớp phép nhân: tìm cặp (thành tiền, tiền thuế), số đứng trước là SL/đơn giá.
+		for j := len(nums) - 1; j >= 1 && ai < 0; j-- {
+			for i := j - 1; i >= 0; i-- {
+				if _, ok := vatRate(nums[i].v, nums[j].v, l.VATRate); ok && nums[i].v > 0 {
+					ai = i
+					break
+				}
+			}
+		}
+		if ai < 0 {
+			n := len(nums)
+			if rateAt >= 0 {
+				n = 0
+				for _, c := range nums {
+					if c.at < rateAt {
+						n++
+					}
+				}
+			}
+			if n == 0 {
+				return model.Line{}, false
+			}
+			ai = n - 1
+		}
+		l.Amount = nums[ai].v
+		prior := nums[:ai]
+		switch len(prior) {
+		case 0:
+		case 1:
+			l.Qty = prior[0].v
+		default:
+			l.Qty, l.Price = prior[len(prior)-2].v, prior[len(prior)-1].v
+		}
+		if l.Qty > 0 && l.Price == 0 {
+			l.Price = textutil.Round(l.Amount/l.Qty, 2)
+		}
+		firstNum = nums[ai-min(2, len(prior))].at
+		l.Notes = append(l.Notes, "không tìm được SL × đơn giá = thành tiền, cột số đoán theo vị trí")
+		if len(prior) == 1 && l.Qty > 0 {
+			l.Notes = append(l.Notes, "đơn giá không đọc được, tính lại = thành tiền / SL")
+		}
 	}
-	if strings.Contains(strings.ToLower(l.Name), "chiết khấu") {
+	// Thuế: số sau thành tiền khớp với thuế suất ghi trên dòng hoặc một thuế suất chuẩn.
+	vatSet := false
+	for i := len(nums) - 1; i > ai && !vatSet; i-- {
+		if r, ok := vatRate(l.Amount, nums[i].v, l.VATRate); ok {
+			l.VATAmount, vatSet = nums[i].v, true
+			got := textutil.NormRate(strconv.FormatFloat(r*100, 'f', -1, 64) + "%")
+			if l.VATRate != "" && got != l.VATRate {
+				l.Notes = append(l.Notes, "thuế suất đọc là "+l.VATRate+", sửa theo tiền thuế thành "+got)
+			}
+			l.VATRate = got
+		}
+	}
+	if !vatSet {
+		l.VATAmount = textutil.Round(l.Amount*textutil.ParseRate(l.VATRate), 0)
+		if ai < len(nums)-1 {
+			l.Notes = append(l.Notes, "số sau thành tiền không khớp tiền thuế của thuế suất nào")
+		}
+	}
+	nameEnd := min(firstNum, end)
+	if nameEnd > 1 && isUnit(f[nameEnd-1]) {
+		l.Unit = f[nameEnd-1]
+		nameEnd--
+	}
+	nameStart := 1
+	if hasCode && nameEnd > 2 && hasDigit(f[1]) && !strings.ContainsAny(f[1], ".,") {
+		l.Code, nameStart = f[1], 2
+	}
+	l.Name = strings.Join(f[nameStart:nameEnd], " ")
+	if strings.Contains(textutil.Fold(l.Name), "chiet khau") {
 		l.Nature = 3
 	}
 	return l, true
+}
+
+// vatRate returns the rate that turns amount into vat: the printed rate first, then standard ones.
+func vatRate(amount, vat float64, given string) (float64, bool) {
+	cands := []float64{0.1, 0.08, 0.05}
+	if given != "" {
+		cands = append([]float64{textutil.ParseRate(given)}, cands...)
+	}
+	for _, r := range cands {
+		if exp := textutil.Round(amount*r, 0); abs(vat-exp) <= max(2, exp*0.002) {
+			return r, true
+		}
+	}
+	return 0, false
+}
+
+func isRate(s string) bool { return reRate.MatchString(s) }
+
+func hasDigit(s string) bool {
+	for _, r := range s {
+		if unicode.IsDigit(r) {
+			return true
+		}
+	}
+	return false
+}
+
+var reUnit = regexp.MustCompile(`^\pL[\pL.]{0,7}[23]?$`) // "Cái", "Kg", "m2", "M3"
+
+func isUnit(s string) bool { return reUnit.MatchString(s) && hasLetter(s) }
+
+// glyphLines rebuilds lines from positioned glyphs; used when a PDF's text runs carry no
+// usable row positions (the whole page collapses into one row).
+func glyphLines(p pdf.Page) []string {
+	type row struct {
+		y  float64
+		gs []pdf.Text
+	}
+	var rows []*row
+	for _, g := range p.Content().Text {
+		var r *row
+		for _, x := range rows {
+			if math.Abs(x.y-g.Y) <= math.Max(1.5, g.FontSize*0.3) {
+				r = x
+				break
+			}
+		}
+		if r == nil {
+			r = &row{y: g.Y}
+			rows = append(rows, r)
+		}
+		r.gs = append(r.gs, g)
+	}
+	sort.Slice(rows, func(i, j int) bool { return rows[i].y > rows[j].y })
+	var out []string
+	for _, r := range rows {
+		sort.SliceStable(r.gs, func(i, j int) bool { return r.gs[i].X < r.gs[j].X })
+		var b strings.Builder
+		for i, g := range r.gs {
+			if i > 0 {
+				prev := r.gs[i-1]
+				if g.X-(prev.X+prev.W) > math.Max(1, g.FontSize*0.2) {
+					b.WriteByte(' ')
+				}
+			}
+			b.WriteString(strings.ReplaceAll(g.S, "�", ""))
+		}
+		if s := textutil.Clean(b.String()); s != "" {
+			out = append(out, s)
+		}
+	}
+	return out
 }

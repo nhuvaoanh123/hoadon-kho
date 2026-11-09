@@ -30,7 +30,7 @@ func TestClassify(t *testing.T) {
 	}
 	var c Classifier
 	for _, tc := range cases {
-		got, why := c.Classify(model.Line{Name: tc.name, Unit: tc.unit, Qty: tc.qty, Nature: tc.nature})
+		got, why, _ := c.Classify(model.Line{Name: tc.name, Unit: tc.unit, Qty: tc.qty, Nature: tc.nature})
 		if got != tc.want {
 			t.Errorf("%q (%s): got %s, want %s (%s)", tc.name, tc.unit, got, tc.want, why)
 		}
@@ -41,7 +41,7 @@ func TestRuleOverrides(t *testing.T) {
 	c := Classifier{Rule: func(k string) (model.Kind, bool) {
 		return model.KindService, k == "gas lạnh r22|kg"
 	}}
-	if k, _ := c.Classify(model.Line{Name: "Gas lạnh  R22", Unit: "Kg", Nature: 1}); k != model.KindService {
+	if k, _, _ := c.Classify(model.Line{Name: "Gas lạnh  R22", Unit: "Kg", Nature: 1}); k != model.KindService {
 		t.Fatalf("rule not applied: %s", k)
 	}
 }

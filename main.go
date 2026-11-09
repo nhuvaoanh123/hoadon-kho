@@ -4,6 +4,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -17,6 +18,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/nhuvaoanh123/hoadon-kho/internal/classify"
 	"github.com/nhuvaoanh123/hoadon-kho/internal/einvoice"
 	"github.com/nhuvaoanh123/hoadon-kho/internal/server"
 	"github.com/nhuvaoanh123/hoadon-kho/internal/store"
@@ -29,10 +31,14 @@ func main() {
 	port := flag.Int("port", 8765, "cổng web nội bộ")
 	dataFlag := flag.String("data", "", "thư mục dữ liệu (mặc định: HoaDonKho-data cạnh file chạy)")
 	noBrowser := flag.Bool("no-browser", false, "không tự mở trình duyệt")
-	dumpPDF := flag.String("dump-pdf", "", "in ra chữ đọc được từ file PDF rồi thoát (để báo lỗi)")
+	dumpPDF := flag.String("dump-pdf", "", "in ra chữ đọc được từ file PDF hoặc ảnh (OCR) rồi thoát (để báo lỗi)")
+	parseOnly := flag.Bool("parse", false, "đọc các file hóa đơn trong tham số, in kết quả JSON rồi thoát")
 	flag.Parse()
 	if *dumpPDF != "" {
 		os.Exit(dump(*dumpPDF))
+	}
+	if *parseOnly {
+		os.Exit(parseFiles(flag.Args()))
 	}
 	if err := run(*port, *dataFlag, !*noBrowser); err != nil {
 		fmt.Println("LỖI:", err)
@@ -84,7 +90,7 @@ func dump(path string) int {
 	data, err := os.ReadFile(path)
 	if err == nil {
 		var lines []string
-		if lines, err = einvoice.PDFLines(data); err == nil {
+		if lines, err = einvoice.DumpLines(path, data); err == nil {
 			for _, l := range lines {
 				fmt.Println(l)
 			}
@@ -93,6 +99,39 @@ func dump(path string) int {
 	}
 	fmt.Println("LỖI:", err)
 	return 1
+}
+
+// parseFiles prints one JSON object per invoice found, classified with the default rules.
+func parseFiles(paths []string) int {
+	var c classify.Classifier
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+	code := 0
+	for _, path := range paths {
+		data, err := os.ReadFile(path)
+		if err != nil {
+			_ = enc.Encode(map[string]string{"file": path, "error": err.Error()})
+			code = 1
+			continue
+		}
+		for _, p := range einvoice.ParseAny(filepath.Base(path), data) {
+			out := map[string]any{"file": path, "name": p.Name, "format": p.Ext, "warnings": p.Warnings}
+			if p.Err != nil {
+				out["error"] = p.Err.Error()
+				code = 1
+			} else {
+				for i := range p.Invoice.Lines {
+					l := &p.Invoice.Lines[i]
+					l.Kind, l.Reason, l.Certain = c.Classify(*l)
+				}
+				einvoice.Verify(p.Invoice)
+				out["invoice"] = p.Invoice
+				out["problems"] = einvoice.Problems(p.Invoice)
+			}
+			_ = enc.Encode(out)
+		}
+	}
+	return code
 }
 
 func alreadyRunning(addr string) bool {

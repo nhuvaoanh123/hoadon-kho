@@ -1,0 +1,47 @@
+{
+  "should_parse": true,
+  "form": "1",
+  "serial": "C25AAL",
+  "number": "00000011",
+  "date": "2025-10-09",
+  "seller_tax": "0100000001",
+  "line_count": 4,
+  "lines": [
+    {
+      "name": "Sản phẩm xuất khẩu theo hợp đồng ngoại thương",
+      "unit": "Cái",
+      "qty": 10,
+      "amount": 5000000,
+      "vat_rate": "0%",
+      "kind": "goods"
+    },
+    {
+      "name": "Dịch vụ tài chính không chịu thuế GTGT",
+      "unit": "Lần",
+      "qty": 1,
+      "amount": 2000000,
+      "vat_rate": "KCT",
+      "kind": "service"
+    },
+    {
+      "name": "Hàng hóa không kê khai, tính nộp thuế GTGT (KKKNT)",
+      "unit": "Cái",
+      "qty": 5,
+      "amount": 1500000,
+      "vat_rate": "KKKNT",
+      "kind": "goods"
+    },
+    {
+      "name": "Dịch vụ áp dụng thuế suất đặc biệt theo quy định riêng",
+      "unit": "Lần",
+      "qty": 1,
+      "amount": 1000000,
+      "vat_rate": "KHAC:5.26%",
+      "kind": "service"
+    }
+  ],
+  "total_before_vat": 9500000,
+  "total_vat": 52600,
+  "total": 9552600,
+  "note": "Lines covering 0%, KCT (không chịu thuế), KKKNT (không kê khai, tính nộp) and a KHAC:5.26% custom rate."
+}

@@ -58,7 +58,7 @@ func TestWorkbooks(t *testing.T) {
 	}
 	var c classify.Classifier
 	for i := range inv.Lines {
-		inv.Lines[i].Kind, inv.Lines[i].Reason = c.Classify(inv.Lines[i])
+		inv.Lines[i].Kind, inv.Lines[i].Reason, _ = c.Classify(inv.Lines[i])
 	}
 	inv.Lines = append(inv.Lines, model.Line{STT: 8, Nature: 1, Name: "Phí vận chuyển", Amount: 1000000, VATRate: "8%", VATAmount: 80000, Kind: model.KindService})
 	if _, err := s.SaveInvoice(inv); err != nil {
