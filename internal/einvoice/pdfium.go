@@ -31,6 +31,7 @@ type glyph struct {
 	idx, next   int // next: stream index of the following character
 	left, right float64
 	base, h     float64 // baseline y (PDF y grows upwards) and font height
+	angle       float64 // rotation in radians
 	spaceAfter  bool    // the stream has a space or line break right after it
 }
 
@@ -142,12 +143,54 @@ func pageGlyphs(inst pdfium.Pdfium, doc references.FPDF_DOCUMENT, index int) ([]
 		if g.h < 1 {
 			g.h = math.Max(1, b.Top-b.Bottom)
 		}
+		if a, err := inst.FPDFText_GetCharAngle(&requests.FPDFText_GetCharAngle{TextPage: tp.TextPage, Index: i}); err == nil {
+			g.angle = float64(a.CharAngle)
+		}
 		if len(gs) > 0 {
 			gs[len(gs)-1].next = i
 		}
 		gs = append(gs, g)
 	}
-	return gs, nil
+	return dropWatermark(gs), nil
+}
+
+// dropWatermark removes glyphs turned away from the page's text or far larger than it:
+// watermarks ("DEMO", "BẢN SAO"), stamps and side notes.
+func dropWatermark(gs []glyph) []glyph {
+	if len(gs) < 20 {
+		return gs
+	}
+	angles := map[int]int{}
+	hs := make([]float64, 0, len(gs))
+	for _, g := range gs {
+		angles[int(math.Round(g.angle*10))]++
+		hs = append(hs, g.h)
+	}
+	main, best := 0, -1
+	for a, n := range angles {
+		if n > best {
+			main, best = a, n
+		}
+	}
+	sort.Float64s(hs)
+	med := hs[len(hs)/2]
+	out := gs[:0]
+	for i, g := range gs {
+		if int(math.Round(g.angle*10)) != main || g.h > med*4 {
+			if i > 0 && len(out) > 0 && g.spaceAfter {
+				out[len(out)-1].spaceAfter = true
+			}
+			continue
+		}
+		out = append(out, g)
+	}
+	for i := range out { // nối lại chuỗi ký tự sau khi bỏ
+		out[i].next = -1
+		if i+1 < len(out) {
+			out[i].next = out[i+1].idx
+		}
+	}
+	return out
 }
 
 // glyphRows groups characters by baseline into lines, top to bottom. Baselines, not glyph
@@ -180,6 +223,7 @@ func glyphRows(gs []glyph) []string {
 // joinRow writes one line left to right; a glyph drawn twice at the same place (fake bold) counts once.
 func joinRow(row []glyph) string {
 	sort.SliceStable(row, func(i, j int) bool { return row[i].left < row[j].left })
+	track := tracking(row)
 	var b strings.Builder
 	var prev *glyph
 	for i := range row {
@@ -188,7 +232,7 @@ func joinRow(row []glyph) string {
 			if g.text == prev.text && math.Abs(g.left-prev.left) < (prev.right-prev.left)*0.3 {
 				continue
 			}
-			if spacedGlyphs(*prev, *g) {
+			if spacedGlyphs(*prev, *g, track) {
 				b.WriteByte(' ')
 			}
 		}
@@ -198,11 +242,27 @@ func joinRow(row []glyph) string {
 	return b.String()
 }
 
-// spacedGlyphs: a space PDFium put between stream neighbours, or a gap between the font boxes
-// (some PDFs place each word without a space character).
-func spacedGlyphs(a, b glyph) bool {
+// tracking is the usual gap between letters of a word on this line (letter-spaced text has a wide one).
+func tracking(row []glyph) float64 {
+	var gaps []float64
+	for i := 1; i < len(row); i++ {
+		if a, b := row[i-1], row[i]; b.idx == a.next && !a.spaceAfter {
+			gaps = append(gaps, b.left-a.right)
+		}
+	}
+	if len(gaps) == 0 {
+		return 0
+	}
+	sort.Float64s(gaps)
+	return math.Max(0, gaps[len(gaps)/2])
+}
+
+// spacedGlyphs: a space PDFium put between stream neighbours, or a gap clearly wider than the
+// line's letter spacing (some PDFs place each word without a space character).
+func spacedGlyphs(a, b glyph, track float64) bool {
+	h := math.Max(a.h, b.h)
 	switch {
-	case b.left-a.right > math.Max(a.h, b.h)*0.06:
+	case b.left-a.right > math.Max(h*0.09, track*2+h*0.05):
 		return true
 	case b.idx == a.next:
 		return a.spaceAfter

@@ -88,6 +88,16 @@ func VerifyKnown(inv *model.Invoice, known func(key string) bool) {
 	}
 }
 
+// decimals is the number of decimal places of v as printed (at most 4).
+func decimals(v float64) int {
+	for d := 0; d < 4; d++ {
+		if p := math.Pow(10, float64(d)); math.Abs(v*p-math.Round(v*p)) < 1e-6 {
+			return d
+		}
+	}
+	return 4
+}
+
 func verifyLine(inv *model.Invoice, l *model.Line, known func(string) bool) {
 	l.Issues = nil
 	add := func(block bool, f string, a ...any) {
@@ -108,7 +118,12 @@ func verifyLine(inv *model.Invoice, l *model.Line, known func(string) bool) {
 		}
 	}
 	if l.Qty > 0 && l.Price > 0 {
-		if d := math.Abs(l.Qty*l.Price - l.Amount); d > math.Max(1, l.Qty*0.01) {
+		tol := math.Max(1, l.Qty*0.01)
+		if l.Qty != math.Trunc(l.Qty) { // SL in số lẻ đã làm tròn (xăng dầu): sai số tới đơn giá × một đơn vị số lẻ cuối
+			tol = math.Max(tol, l.Price*math.Pow(10, -float64(decimals(l.Qty))))
+			tol = math.Max(tol, l.Amount*0.0005) // SL đo được (lít), thành tiền theo số tiền trả: lệch dưới 0,05%
+		}
+		if d := math.Abs(l.Qty*l.Price - l.Amount); d > tol {
 			add(false, "SL × đơn giá = %s nhưng thành tiền là %s", money(l.Qty*l.Price), money(l.Amount))
 		}
 	}

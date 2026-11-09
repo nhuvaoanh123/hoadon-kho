@@ -253,24 +253,26 @@ func glued(a, b pdf.Text) bool {
 }
 
 var (
-	reSerial  = regexp.MustCompile(`(?i)k[ýy] hi[ệe]u[^:]*:\s*([1-6]?[CK][0-9]{2}[A-Z]{2,4})\b`)
-	reNumber  = regexp.MustCompile(`(?i)\bs[ốo]\s*(?:h[óo]a đ[ơo]n)?\s*(?:\(\s*no\.?\s*\))?\s*:\s*0*([0-9]{1,8})\b`)
-	reDate    = regexp.MustCompile(`(?i)ng[àa]y\D{0,20}?(\d{1,2})\s*th[áa]ng\D{0,20}?(\d{1,2})\s*n[ăa]m\D{0,20}?(\d{4})`)
-	reTax     = regexp.MustCompile(`(?i)(?:m[ãa] s[ốo] thu[ếe]|\bmst\b)[^:0-9]{0,30}:?\s*((?:[0-9] ){9,12}[0-9]\b|[0-9][0-9 ]{8,13}[0-9](?:-[0-9]{3})?)`)
-	reCQT     = regexp.MustCompile(`(?i)m[ãa] (?:c[ủu]a )?cqt[^:]*:\s*([0-9A-F]{20,40})`)
-	reBuyer   = regexp.MustCompile(`(?i)(?:t[êe]n đ[ơo]n v[ịi]|đ[ơo]n v[ịi] mua h[àa]ng)[^:]*:\s*(.+)`)
-	reNameEnd = regexp.MustCompile(`(?i)\s+(?:mst|m[ãa] s[ốo] thu[ếe]|tax code)\b.*$`)
-	reDateISO = regexp.MustCompile(`(?i)ng[àa]y[^0-9]{0,20}(20\d{2})-(\d{1,2})-(\d{1,2})\b`)
-	reDateDMY = regexp.MustCompile(`(?i)ng[àa]y[^0-9]{0,20}(\d{1,2})[/.-](\d{1,2})[/.-](20\d{2})\b`)
-	reSeller  = regexp.MustCompile(`(?i)(?:đ[ơo]n v[ịi] b[áa]n h[àa]ng|ng[ưu][ờo]i b[áa]n)[^:]*:\s*(.+)`)
-	reAddr    = regexp.MustCompile(`(?i)^đ[ịi]a ch[ỉi][^:]*:\s*(.+)`)
-	reCompany = regexp.MustCompile(`^(CÔNG TY|CTY|DOANH NGHIỆP|HỘ KINH DOANH|CHI NHÁNH|TẬP ĐOÀN|HỢP TÁC XÃ)\b`)
-	reSerial2 = regexp.MustCompile(`\b([1-6Il|])([CK]\d{2}[A-Z]{3})\b`)
-	reNumber2 = regexp.MustCompile(`(?i)\(no\.?\)\s*[:.]?\s*0*([0-9]{1,8})\b`)
-	reNumber3 = regexp.MustCompile(`\b0{2,}([1-9][0-9]{0,6})\b`)
-	reDate2   = regexp.MustCompile(`(?i)\(date\)\D{0,15}?(\d{1,2})\D{1,25}?(\d{1,2})\D{1,25}?(\d{4})`)
-	reDate3   = regexp.MustCompile(`\b(\d{1,2})/(\d{1,2})/(20\d{2})\b`)
-	reTax2    = regexp.MustCompile(`(?i)tax code\)?\s*[:.]?\s*((?:[0-9] ){9,12}[0-9]\b|[0-9][0-9 ]{8,13}[0-9](?:-[0-9]{3})?)`)
+	reSerial   = regexp.MustCompile(`(?i)k[ýy] hi[ệe]u[^:]*:\s*([1-6]?[CK][0-9]{2}[A-Z]{2,4})\b`)
+	reNumber   = regexp.MustCompile(`(?i)\bs[ốo]\s*(?:h[óo]a đ[ơo]n)?\s*(?:\(\s*no\.?\s*\))?\s*:\s*0*([0-9]{1,8})\b`)
+	reDate     = regexp.MustCompile(`(?i)ng[àa]y\D{0,20}?(\d{1,2})\s*th[áa]ng\D{0,20}?(\d{1,2})\s*n[ăa]m\D{0,20}?(\d{4})`)
+	reTax      = regexp.MustCompile(`(?i)(?:m[ãa] s[ốo] thu[ếe]|\bmst\b)[^:0-9]{0,30}:?\s*((?:[0-9] ){9,12}[0-9]\b|[0-9][0-9 ]{8,13}[0-9](?:-[0-9]{3})?)`)
+	reCQT      = regexp.MustCompile(`(?i)m[ãa] (?:c[ủu]a )?cqt[^:]*:\s*([0-9A-F]{20,40})`)
+	reBuyer    = regexp.MustCompile(`(?i)(?:t[êe]n đ[ơo]n v[ịi]|đ[ơo]n v[ịi] mua h[àa]ng)[^:]*:\s*(.+)`)
+	reNameEnd  = regexp.MustCompile(`(?i)\s+(?:mst|m[ãa] s[ốo] thu[ếe]|tax code)\b.*$`)
+	reDateISO  = regexp.MustCompile(`(?i)ng[àa]y[^0-9]{0,20}(20\d{2})-(\d{1,2})-(\d{1,2})\b`)
+	reDateDMY  = regexp.MustCompile(`(?i)ng[àa]y[^0-9]{0,20}(\d{1,2})[/.-](\d{1,2})[/.-](20\d{2})\b`)
+	reSeller   = regexp.MustCompile(`(?i)(?:đ[ơo]n v[ịi] b[áa]n h[àa]ng|ng[ưu][ờo]i b[áa]n)[^:]*:\s*(.+)`)
+	reAddr     = regexp.MustCompile(`(?i)^đ[ịi]a ch[ỉi][^:]*:\s*(.+)`)
+	reCompany  = regexp.MustCompile(`^(CÔNG TY|CTY|DOANH NGHIỆP|HỘ KINH DOANH|CHI NHÁNH|TẬP ĐOÀN|HỢP TÁC XÃ)\b`)
+	reSerial2  = regexp.MustCompile(`\b([1-6Il|])([CK]\d{2}[A-Z]{3})\b`)
+	reNumber2  = regexp.MustCompile(`(?i)\(no\.?\)\s*[:.]?\s*0*([0-9]{1,8})\b`)
+	reNumber3  = regexp.MustCompile(`\b0{2,}([1-9][0-9]{0,6})\b`)
+	reDate2    = regexp.MustCompile(`(?i)\(date\)\D{0,15}?(\d{1,2})\D{1,25}?(\d{1,2})\D{1,25}?(\d{4})`)
+	reDate3    = regexp.MustCompile(`\b(\d{1,2})/(\d{1,2})/(20\d{2})\b`)
+	reTax2     = regexp.MustCompile(`(?i)tax code\)?\s*[:.]?\s*((?:[0-9] ){9,12}[0-9]\b|[0-9][0-9 ]{8,13}[0-9](?:-[0-9]{3})?)`)
+	reCurrency = regexp.MustCompile(`(?i)(?:đồng tiền thanh toán|loại tiền(?: tệ)?|currency)[^:\n]{0,30}:\s*([A-Z]{3})\b`)
+	reExRate   = regexp.MustCompile(`(?i)(?:tỷ giá|tỉ giá|exchange rate)[^:\n]{0,30}:\s*([0-9][0-9.,]*)\s*(?:VND|đ)?\s*(?:/\s*([A-Z]{3}))?`)
 	// Hóa đơn mẫu cũ (trước 7/2022): mẫu số 01GTKT0/001, ký hiệu KT/18E.
 	reFormOld   = regexp.MustCompile(`(?i)m[ẫa]u s[ốo][^:\n]{0,20}:\s*([0-9]{2}[A-Z]{4}[0-9]/[0-9]{3})`)
 	reSerialOld = regexp.MustCompile(`(?i)k[ýy] hi[ệe]u[^:\n]{0,20}:\s*([A-Z]{2}/[0-9]{2}[A-Z])\b`)
@@ -321,6 +323,17 @@ func ParseText(lines []string) (*model.Invoice, []string, error) {
 			break
 		}
 	}
+	if m := reCurrency.FindStringSubmatch(all); m != nil && strings.ToUpper(m[1]) != "VND" {
+		inv.Currency = strings.ToUpper(m[1])
+	}
+	if m := reExRate.FindStringSubmatch(all); m != nil {
+		if v, ok := textutil.ParseNumber(m[1]); ok && v > 1 {
+			inv.ExRate = v
+			if m[2] != "" && strings.ToUpper(m[2]) != "VND" {
+				inv.Currency = strings.ToUpper(m[2])
+			}
+		}
+	}
 	if m := reCQT.FindStringSubmatch(all); m != nil {
 		inv.TaxAuthCode = m[1]
 	}
@@ -359,6 +372,12 @@ func ParseText(lines []string) (*model.Invoice, []string, error) {
 	parseItems(lines, inv) // số, ngày, MST thiếu: Verify báo lỗi phải sửa, không cảnh báo lặp lại
 	if len(inv.Lines) == 0 {
 		return nil, nil, errors.New("không tìm thấy dòng hàng hóa nào: hãy dùng file XML hoặc nhập tay")
+	}
+	if st := &inv.Stated; st.VAT == 0 && st.ByRateVAT > 0 {
+		st.VAT = st.ByRateVAT
+	}
+	if st := &inv.Stated; st.BeforeVAT == 0 && st.ByRateBefore > 0 {
+		st.BeforeVAT = st.ByRateBefore
 	}
 	invoiceRate(inv)
 	finishTotals(inv, 0, 0, 0, &warns)
@@ -426,7 +445,35 @@ var (
 	headerWords  = []string{"gtgt", "thanh toan", "tien thue", "thue suat", "(total", "in words", "bang chu"}
 )
 
-var reInvRate = regexp.MustCompile(`^thue suat(?: thue)?(?: gtgt)?\s*(?:\(vat rate\))?\s*:\s*(\d+(?:[.,]\d+)?\s*%)`)
+var reInvRate = regexp.MustCompile(`^thue (?:suat(?: thue)?(?: gtgt)?|gtgt)\s*(?:\([^)]*\))?\s*:\s*(\d+(?:[.,]\d+)?\s*%)`)
+var reReduced = regexp.MustCompile(`^da giam ([0-9][0-9.,]*) dong`)
+
+// firstNumberAfter is the first number (>= 100) after the first word of the line equal to one
+// of the folded labels; ln and its folded form low have the same words.
+func firstNumberAfter(ln, low string, labels ...string) (float64, bool) {
+	f, fl := strings.Fields(ln), strings.Fields(low)
+	if len(f) != len(fl) {
+		return 0, false
+	}
+	start := -1
+	for i, w := range fl {
+		for _, lab := range labels {
+			if strings.Trim(w, ":()") == lab {
+				start = i
+				break
+			}
+		}
+		if start >= 0 {
+			break
+		}
+	}
+	for i := start + 1; start >= 0 && i < len(f); i++ {
+		if v, ok := textutil.ParseNumber(f[i]); ok && v >= 100 {
+			return v, true
+		}
+	}
+	return 0, false
+}
 
 // lastNumber is the last number in s.
 func lastNumber(s string) (float64, bool) {
@@ -443,6 +490,15 @@ func lastNumber(s string) (float64, bool) {
 // printed VAT is exactly what that rate makes of the lines.
 func invoiceRate(inv *model.Invoice) {
 	st := inv.Stated
+	derived := false
+	if st.Rate == "" && st.VAT > 0 { // không in thuế suất: suy từ tiền thuế, người dùng phải xác nhận
+		for _, cand := range []string{"10%", "8%", "5%"} {
+			if v := sumVAT(inv, textutil.ParseRate(cand)); v >= 0 && abs(v-st.VAT) <= float64(len(inv.Lines)) {
+				st.Rate, derived = cand, true
+				break
+			}
+		}
+	}
 	if st.Rate == "" {
 		return
 	}
@@ -460,7 +516,22 @@ func invoiceRate(inv *model.Invoice) {
 	for i := range inv.Lines {
 		inv.Lines[i].VATRate = st.Rate
 		inv.Lines[i].VATAmount = textutil.Round(inv.Lines[i].Amount*r, 0)
+		if derived {
+			inv.Lines[i].Notes = append(inv.Lines[i].Notes, "hóa đơn không in thuế suất, tính từ tiền thuế được "+st.Rate)
+		}
 	}
+}
+
+// sumVAT is the VAT of all lines at rate r, or -1 when a line already has a rate or VAT.
+func sumVAT(inv *model.Invoice, r float64) float64 {
+	var v float64
+	for _, l := range inv.Lines {
+		if l.VATRate != "" || l.VATAmount != 0 {
+			return -1
+		}
+		v += textutil.Round(l.Amount*r, 0)
+	}
+	return v
 }
 
 // bareTotal reports a "Cộng" / "Cộng (Total):" row, not "Cộng tiền hàng".
@@ -499,15 +570,17 @@ func endOfTable(low string, seenItems bool) bool {
 
 // parseItems fills inv.Lines and inv.Stated (totals printed below the table).
 func parseItems(lines []string, inv *model.Invoice) {
-	start, hasCode, noPrice, noUnit := 0, false, false, false
+	start := 0
+	var cols tableCols
 	for i, ln := range lines {
 		l := textutil.Fold(ln)
 		if strings.Contains(l, "stt") || strings.Contains(l, "ten hang") || strings.Contains(l, "name of goods") {
 			start = i + 1
-			hasCode = strings.Contains(l, "ma hang") || strings.Contains(l, "ma hh") || strings.Contains(l, "ma vt") || strings.Contains(l, "item code")
+			cols.code = strings.Contains(l, "ma hang") || strings.Contains(l, "ma hh") || strings.Contains(l, "ma vt") || strings.Contains(l, "item code")
 			head := textutil.Fold(strings.Join(lines[max(0, i-1):min(len(lines), i+3)], " "))
-			noPrice = !strings.Contains(head, "don gia") && !strings.Contains(head, "price") && !strings.Contains(head, "gia ban")
-			noUnit = !strings.Contains(head, "don vi") && !strings.Contains(head, "vi tinh") && !strings.Contains(head, "dvt") && !strings.Contains(head, "(unit)") && !strings.Contains(head, "uom")
+			cols.noPrice = !strings.Contains(head, "don gia") && !strings.Contains(head, "price") && !strings.Contains(head, "gia ban")
+			cols.lot = strings.Contains(head, "so lo") || strings.Contains(head, "han dung") || strings.Contains(head, "lot") || strings.Contains(head, "exp")
+			cols.noUnit = !strings.Contains(head, "don vi") && !strings.Contains(head, "vi tinh") && !strings.Contains(head, "dvt") && !strings.Contains(head, "(unit)") && !strings.Contains(head, "uom")
 			break
 		}
 	}
@@ -529,6 +602,12 @@ func parseItems(lines []string, inv *model.Invoice) {
 				inv.Stated.Total = lone
 			}
 			lone = 0
+			if m := reReduced.FindStringSubmatch(low); m != nil && len(inv.Lines) > 0 {
+				if v, ok := textutil.ParseNumber(m[1]); ok && v > 0 {
+					inv.Lines = append(inv.Lines, model.Line{STT: len(inv.Lines) + 1, Nature: 3, Name: textutil.Clean(ln), Amount: v})
+				}
+				continue
+			}
 			statedLine(ln, low, &inv.Stated)
 			continue
 		}
@@ -542,7 +621,7 @@ func parseItems(lines []string, inv *model.Invoice) {
 			pending, newPage = nil, true
 			continue
 		}
-		l, ok := itemRow(ln, hasCode, noPrice, noUnit)
+		l, ok := itemRow(ln, cols)
 		if !ok {
 			pending = append(pending, ln)
 			continue
@@ -669,6 +748,15 @@ func statedLine(ln, low string, st *model.Stated) {
 		return
 	}
 	last := nums[len(nums)-1]
+	if reRatePart.MatchString(low) && !strings.HasPrefix(low, "tong cong") {
+		if strings.Contains(low, "tien thue") {
+			st.ByRateVAT += last
+		}
+		if i := strings.Index(low, "tien hang"); i >= 0 && (len(nums) > 1 || !strings.Contains(low, "tien thue")) {
+			st.ByRateBefore += nums[0]
+		}
+		return
+	}
 	if bareTotal(low) { // "Cộng (Total): tiền hàng, tiền thuế[, tổng]"
 		switch {
 		case len(nums) >= 3:
@@ -687,13 +775,23 @@ func statedLine(ln, low string, st *model.Stated) {
 	case strings.Contains(low, "tien thue"):
 		st.VAT = last
 	case strings.Contains(low, "tien hang") || strings.Contains(low, "chua co thue") || strings.Contains(low, "truoc thue"):
-		st.BeforeVAT = last
+		if v, ok := firstNumberAfter(ln, low, "hang", "thue", "chua co thue"); ok {
+			st.BeforeVAT = v // nhiều số: các cột tổng (trước thuế, sau thuế), hoặc tỷ giá in phía trước
+		}
 	}
 }
 
 // itemRow parses "STT name [unit] qty price amount [rate] [vat]". Columns are
 // found by arithmetic (qty × price = amount, vat = amount × rate), not position.
-func itemRow(ln string, hasCode, noPrice, noUnit bool) (model.Line, bool) {
+// tableCols is what the table header says about its columns.
+type tableCols struct {
+	code    bool // mã hàng
+	noPrice bool // no unit price column (telecom bills)
+	noUnit  bool // no unit column
+	lot     bool // số lô / hạn dùng columns between name and unit (pharmacy)
+}
+
+func itemRow(ln string, cols tableCols) (model.Line, bool) {
 	f := strings.Fields(ln)
 	if len(f) < 3 {
 		return model.Line{}, false
@@ -724,12 +822,20 @@ func itemRow(ln string, hasCode, noPrice, noUnit bool) (model.Line, bool) {
 		return model.Line{}, false
 	}
 	l := model.Line{STT: stt, Nature: 1, VATRate: textutil.NormRate(rate)}
+	if len(nums) == 1 && rateAt == len(f)-1 && nums[0].v == math.Trunc(nums[0].v) && nums[0].v < 1000 {
+		l.Qty = nums[0].v // món trong combo/hàng kèm: có SL, không có giá
+		l.Name = strings.Join(f[1:nums[0].at], " ")
+		if !cols.noUnit {
+			l.Name, l.Unit = splitUnit(f[1:nums[0].at])
+		}
+		return l, true
+	}
 	qi, pi, ai := -1, -1, -1
 	for k := len(nums) - 1; k >= 2 && ai < 0; k-- {
 		for j := k - 1; j >= 1 && ai < 0; j-- {
 			for i := j - 1; i >= 0; i-- {
 				q, p, a := nums[i].v, nums[j].v, nums[k].v
-				if q > 0 && p > 0 && a > 0 && abs(q*p-a) <= max(1, a*0.0005) {
+				if q > 0 && (p > 0 && a > 0 && abs(q*p-a) <= max(1, a*0.0005) || p == 0 && a == 0 && j == i+1) {
 					qi, pi, ai = i, j, k
 					break
 				}
@@ -783,7 +889,7 @@ func itemRow(ln string, hasCode, noPrice, noUnit bool) (model.Line, bool) {
 		if ai+1 < len(nums) {
 			_, vatOK = vatRate(l.Amount, nums[ai+1].v, l.VATRate)
 		}
-		if !(noPrice && vatOK && len(prior) <= 1) {
+		if !(cols.noPrice && vatOK && len(prior) <= 1) {
 			l.Notes = append(l.Notes, "không tìm được SL × đơn giá = thành tiền, cột số đoán theo vị trí")
 			if len(prior) == 1 && l.Qty > 0 {
 				l.Notes = append(l.Notes, "đơn giá không đọc được, tính lại = thành tiền / SL")
@@ -802,6 +908,13 @@ func itemRow(ln string, hasCode, noPrice, noUnit bool) (model.Line, bool) {
 			l.VATRate = got
 		}
 	}
+	// Cột cuối là thành tiền đã có thuế: thuế = cột đó - thành tiền.
+	for i := len(nums) - 1; i > ai && !vatSet && l.Amount > 0; i-- {
+		if r, ok := vatRate(l.Amount, nums[i].v-l.Amount, l.VATRate); ok && nums[i].v > l.Amount {
+			l.VATAmount, vatSet = nums[i].v-l.Amount, true
+			l.VATRate = textutil.NormRate(strconv.FormatFloat(r*100, 'f', -1, 64) + "%")
+		}
+	}
 	if !vatSet {
 		l.VATAmount = textutil.Round(l.Amount*textutil.ParseRate(l.VATRate), 0)
 		if ai < len(nums)-1 {
@@ -809,12 +922,18 @@ func itemRow(ln string, hasCode, noPrice, noUnit bool) (model.Line, bool) {
 		}
 	}
 	nameEnd := min(firstNum, end)
-	if nameEnd > 1 && !noUnit && isUnit(f[nameEnd-1]) {
-		l.Unit = f[nameEnd-1]
-		nameEnd--
+	if nameEnd > 1 && !cols.noUnit {
+		var unit string
+		if _, unit = splitUnit(f[1:nameEnd]); unit != "" {
+			nameEnd -= len(strings.Fields(unit))
+			l.Unit = unit
+		}
+	}
+	for k := 0; cols.lot && k < 2 && nameEnd > 1 && (reDayMonth.MatchString(f[nameEnd-1]) || reLot.MatchString(f[nameEnd-1])); k++ {
+		nameEnd-- // số lô, hạn dùng: cột riêng, không phải tên hàng
 	}
 	nameStart := 1
-	if hasCode && nameEnd > 2 && hasDigit(f[1]) && !strings.ContainsAny(f[1], ".,") {
+	if cols.code && nameEnd > 2 && hasDigit(f[1]) && !strings.ContainsAny(f[1], ".,") {
 		l.Code, nameStart = f[1], 2
 	}
 	l.Name = strings.Join(f[nameStart:nameEnd], " ")
@@ -822,6 +941,21 @@ func itemRow(ln string, hasCode, noPrice, noUnit bool) (model.Line, bool) {
 		l.Nature = 3
 	}
 	return l, true
+}
+
+// twoWordUnits are units written in two words; the last word alone is not a unit.
+var twoWordUnits = map[string]bool{"san pham": true, "lan xuat": true, "goi cuoc": true}
+
+// splitUnit takes the unit off the end of a name: a known two-word unit or a one-word unit.
+func splitUnit(f []string) (name, unit string) {
+	n := len(f)
+	if n >= 2 && twoWordUnits[textutil.Fold(f[n-2]+" "+f[n-1])] {
+		return strings.Join(f[:n-2], " "), f[n-2] + " " + f[n-1]
+	}
+	if n >= 1 && isUnit(f[n-1]) {
+		return strings.Join(f[:n-1], " "), f[n-1]
+	}
+	return strings.Join(f, " "), ""
 }
 
 // vatRate returns the rate that turns amount into vat: the printed rate first, then standard ones.
@@ -849,7 +983,14 @@ func hasDigit(s string) bool {
 	return false
 }
 
-var reUnit = regexp.MustCompile(`^\pL[\pL.]{0,7}[23]?$`) // "Cái", "Kg", "m2", "M3"
+var reUnit = regexp.MustCompile(`^\pL[\pL.]{0,7}[23]?(?:/\pL[\pL.]{0,7})?$`) // "Cái", "Kg", "m2", "Ly/cốc"
+
+var (
+	reDayMonth = regexp.MustCompile(`^\d{1,2}/\d{1,2}/\d{2,4}$`)
+	reLot      = regexp.MustCompile(`^[A-Z]{0,4}\d[A-Z0-9/.\-]*$`)
+	// "Cộng tiền hàng (5%): ...", "Tiền thuế GTGT (8%): ...": one line per rate
+	reRatePart = regexp.MustCompile(`\(\s*\d+(?:[.,]\d+)?\s*%\s*\)`)
+)
 
 func isUnit(s string) bool { return reUnit.MatchString(s) && hasLetter(s) }
 

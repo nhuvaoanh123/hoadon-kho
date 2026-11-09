@@ -107,6 +107,9 @@ func ValidMST(s string) bool {
 		}
 		s = s[:i]
 	}
+	if len(s) == 12 && strings.Trim(s, "0123456789") == "" && s[:3] >= "001" && s[:3] <= "096" {
+		return true // số định danh cá nhân dùng làm MST (hộ, cá nhân kinh doanh): không có chữ số kiểm tra
+	}
 	if len(s) != 10 || strings.Trim(s, "0123456789") != "" {
 		return false
 	}
