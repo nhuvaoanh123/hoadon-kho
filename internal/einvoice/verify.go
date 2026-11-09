@@ -20,6 +20,9 @@ func Verify(inv *model.Invoice) {
 	if strings.TrimSpace(inv.Number) == "" {
 		add(true, "Thiếu số hóa đơn")
 	}
+	if strings.TrimSpace(inv.Serial) == "" {
+		add(true, "Thiếu ký hiệu hóa đơn")
+	}
 	if d, err := time.Parse("2006-01-02", inv.Date); err != nil {
 		add(true, "Thiếu hoặc sai ngày hóa đơn")
 	} else if d.After(time.Now()) {

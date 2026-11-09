@@ -82,6 +82,7 @@ func run(port int, dataDir string, browser bool) error {
 	if browser {
 		go func() { time.Sleep(300 * time.Millisecond); openBrowser(url) }()
 	}
+	einvoice.WarmUp()
 	srv := &http.Server{Handler: server.New(st, dataDir, version), ReadHeaderTimeout: 10 * time.Second}
 	return srv.Serve(ln)
 }
