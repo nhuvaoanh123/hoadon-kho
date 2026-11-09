@@ -1,0 +1,22 @@
+{
+  "should_parse": true,
+  "form": "1",
+  "serial": "C26MBD",
+  "number": "188415",
+  "date": "2026-02-26",
+  "seller_tax": "0100000003",
+  "line_count": 1,
+  "lines": [
+    {
+      "name": "XĂNG RON 95 MỨC 3",
+      "unit": "Lít",
+      "qty": 24.813,
+      "amount": 462963,
+      "vat_rate": "8%"
+    }
+  ],
+  "total_before_vat": 462963,
+  "total_vat": 37037,
+  "total": 500000,
+  "note": "Fuel: litres printed with 3 decimals from a VAT-inclusive pump total, so quantity x price differs from the amount by the litre rounding; rate label '(Tax rate)'."
+}

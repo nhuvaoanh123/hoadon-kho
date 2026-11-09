@@ -52,6 +52,8 @@ type Stated struct {
 	Total     float64 `json:"total"`
 	Words     string  `json:"words"`
 	Rate      string  `json:"rate,omitempty"` // one VAT rate printed for the whole invoice
+
+	ByRateBefore, ByRateVAT float64 `json:"-"` // sums of the per-rate summary lines
 }
 
 // Line is one row of the goods/services table of an invoice.
