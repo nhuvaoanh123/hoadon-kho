@@ -1,0 +1,50 @@
+{
+  "should_parse": true,
+  "form": "1",
+  "serial": "C26MCV",
+  "number": "569405",
+  "date": "2026-02-19",
+  "seller_tax": "0100000003",
+  "line_count": 5,
+  "lines": [
+    {
+      "name": "Khăn lạnh",
+      "unit": "Cái",
+      "qty": 2,
+      "amount": 0,
+      "vat_rate": "8%"
+    },
+    {
+      "name": "Coca Cola Zero (Lon)",
+      "unit": "Lon",
+      "qty": 1,
+      "amount": 39000,
+      "vat_rate": "8%"
+    },
+    {
+      "name": "Cà phê sữa đá (ly)",
+      "unit": "Ly/cốc",
+      "qty": 2,
+      "amount": 60000,
+      "vat_rate": "10%"
+    },
+    {
+      "name": "Phần ăn combo trưa",
+      "unit": "Sản phẩm",
+      "qty": 1,
+      "amount": 120000,
+      "vat_rate": "8%"
+    },
+    {
+      "name": "Cơm trắng (kèm combo)",
+      "unit": "Sản phẩm",
+      "qty": 1,
+      "amount": 0,
+      "vat_rate": "8%"
+    }
+  ],
+  "total_before_vat": 219000,
+  "total_vat": 18720,
+  "total": 237720,
+  "note": "Restaurant: zero-priced rows, letter-spaced unit 'Lon', slashed unit 'Ly/cốc', two-word unit 'Sản phẩm', a combo part with quantity but no price."
+}

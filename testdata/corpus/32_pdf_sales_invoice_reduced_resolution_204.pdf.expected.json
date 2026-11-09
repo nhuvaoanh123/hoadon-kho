@@ -1,0 +1,23 @@
+{
+  "should_parse": true,
+  "form": "2",
+  "serial": "C26MAB",
+  "number": "18",
+  "date": "2026-02-04",
+  "seller_tax": "001090000017",
+  "line_count": 2,
+  "lines": [
+    {
+      "name": "Thuê phòng nghỉ",
+      "unit": "Đêm",
+      "qty": 1,
+      "amount": 1200000
+    },
+    {
+      "amount": 12000,
+      "kind": "discount"
+    }
+  ],
+  "total": 1188000,
+  "note": "Sales invoice with the 20% reduction under Resolution 204/2025/QH15 printed as 'Đã giảm ... đồng'; seller uses a 12-digit personal tax code."
+}

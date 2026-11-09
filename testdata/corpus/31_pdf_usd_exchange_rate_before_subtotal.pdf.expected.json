@@ -1,0 +1,22 @@
+{
+  "should_parse": true,
+  "form": "1",
+  "serial": "C26AAA",
+  "number": "7",
+  "date": "2026-03-31",
+  "seller_tax": "0100000003",
+  "line_count": 1,
+  "lines": [
+    {
+      "name": "Dung môi mẫu MEK",
+      "unit": "Tấn",
+      "qty": 2.5,
+      "amount": 4500,
+      "vat_rate": "0%"
+    }
+  ],
+  "total_before_vat": 4500,
+  "total_vat": 0,
+  "total": 4500,
+  "note": "USD invoice: the exchange rate is printed on the same line, before the subtotal."
+}

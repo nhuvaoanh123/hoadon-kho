@@ -1,0 +1,43 @@
+{
+  "should_parse": true,
+  "form": "1",
+  "serial": "C26TDE",
+  "number": "15",
+  "date": "2026-01-05",
+  "seller_tax": "0100000003",
+  "line_count": 4,
+  "lines": [
+    {
+      "name": "Thuốc mẫu A (Hộp 10 viên)",
+      "unit": "Hộp",
+      "qty": 10,
+      "amount": 500000,
+      "vat_rate": "5%"
+    },
+    {
+      "name": "Siro mẫu B (Lọ 125ml)",
+      "unit": "Hộp",
+      "qty": 10,
+      "amount": 380000,
+      "vat_rate": "8%"
+    },
+    {
+      "name": "Viên uống mẫu C bổ sung kẽm và vitamin (hộp 30 viên)",
+      "unit": "Hộp",
+      "qty": 20,
+      "amount": 720000,
+      "vat_rate": "8%"
+    },
+    {
+      "name": "Hàng khuyến mại mẫu D (không thu tiền)",
+      "unit": "Hộp",
+      "qty": 1,
+      "amount": 0,
+      "vat_rate": "8%"
+    }
+  ],
+  "total_before_vat": 1600000,
+  "total_vat": 113000,
+  "total": 1713000,
+  "note": "Pharmacy layout: lot and expiry columns between name and unit, line total including VAT after the rate, rotated watermark, wrapped name, zero-priced promotion row, per-rate summary lines."
+}

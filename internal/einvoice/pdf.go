@@ -577,10 +577,8 @@ func parseItems(lines []string, inv *model.Invoice) {
 		if strings.Contains(l, "stt") || strings.Contains(l, "ten hang") || strings.Contains(l, "name of goods") {
 			start = i + 1
 			cols.code = strings.Contains(l, "ma hang") || strings.Contains(l, "ma hh") || strings.Contains(l, "ma vt") || strings.Contains(l, "item code")
-			head := textutil.Fold(strings.Join(lines[max(0, i-1):min(len(lines), i+3)], " "))
-			cols.noPrice = !strings.Contains(head, "don gia") && !strings.Contains(head, "price") && !strings.Contains(head, "gia ban")
-			cols.lot = strings.Contains(head, "so lo") || strings.Contains(head, "han dung") || strings.Contains(head, "lot") || strings.Contains(head, "exp")
-			cols.noUnit = !strings.Contains(head, "don vi") && !strings.Contains(head, "vi tinh") && !strings.Contains(head, "dvt") && !strings.Contains(head, "(unit)") && !strings.Contains(head, "uom")
+			cols = headerCols(lines, i)
+			cols.code = strings.Contains(l, "ma hang") || strings.Contains(l, "ma hh") || strings.Contains(l, "ma vt") || strings.Contains(l, "item code")
 			break
 		}
 	}
@@ -783,6 +781,27 @@ func statedLine(ln, low string, st *model.Stated) {
 
 // itemRow parses "STT name [unit] qty price amount [rate] [vat]". Columns are
 // found by arithmetic (qty × price = amount, vat = amount × rate), not position.
+var reRowStart = regexp.MustCompile(`^\d{1,4}\s+\S`)
+
+// headerCols reads the column titles around header line i, up to the first item row. Titles
+// wrap over several lines ("Đơn" / "vị" / "tính"), so words are matched one by one.
+func headerCols(lines []string, i int) tableCols {
+	end := i + 1
+	for end < len(lines) && end < i+8 && !(reRowStart.MatchString(lines[end]) && !columnNumbers(textutil.Fold(lines[end]))) {
+		end++
+	}
+	head := textutil.Fold(strings.Join(lines[max(0, i-2):end], " "))
+	w := map[string]bool{}
+	for _, t := range strings.FieldsFunc(head, func(r rune) bool { return !unicode.IsLetter(r) }) {
+		w[t] = true
+	}
+	return tableCols{
+		noPrice: !strings.Contains(head, "don gia") && !w["price"] && !strings.Contains(head, "gia ban"),
+		lot:     w["lo"] && w["so"] || w["han"] && w["dung"] || w["lot"] || w["exp"] || w["hsd"],
+		noUnit:  !(w["vi"] && w["tinh"]) && !w["dvt"] && !w["unit"] && !w["uom"],
+	}
+}
+
 // tableCols is what the table header says about its columns.
 type tableCols struct {
 	code    bool // mã hàng
