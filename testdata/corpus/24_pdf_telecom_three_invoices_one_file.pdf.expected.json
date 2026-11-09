@@ -1,0 +1,69 @@
+{
+  "should_parse": true,
+  "invoices": [
+    {
+      "should_parse": true,
+      "form": "1",
+      "serial": "K25DCB",
+      "number": "192024",
+      "date": "2025-10-06",
+      "seller_tax": "0100000003-002",
+      "line_count": 1,
+      "lines": [
+        {
+          "name": "Cước dịch vụ viễn thông trả sau (Dịch vụ chịu thuế)",
+          "unit": "",
+          "amount": 44545,
+          "vat_rate": "10%",
+          "kind": "service"
+        }
+      ],
+      "total_before_vat": 44545,
+      "total_vat": 4455,
+      "total": 49000
+    },
+    {
+      "should_parse": true,
+      "form": "1",
+      "serial": "K25DCB",
+      "number": "45207",
+      "date": "2025-10-06",
+      "seller_tax": "0100000003-002",
+      "line_count": 1,
+      "lines": [
+        {
+          "name": "Cước dịch vụ viễn thông trả sau (Dịch vụ chịu thuế)",
+          "unit": "",
+          "amount": 49564,
+          "vat_rate": "10%",
+          "kind": "service"
+        }
+      ],
+      "total_before_vat": 49564,
+      "total_vat": 4956,
+      "total": 54520
+    },
+    {
+      "should_parse": true,
+      "form": "1",
+      "serial": "K25DCB",
+      "number": "168720",
+      "date": "2025-10-06",
+      "seller_tax": "0100000003-002",
+      "line_count": 1,
+      "lines": [
+        {
+          "name": "Cước dịch vụ viễn thông trả sau (Dịch vụ chịu thuế)",
+          "unit": "",
+          "amount": 90000,
+          "vat_rate": "10%",
+          "kind": "service"
+        }
+      ],
+      "total_before_vat": 90000,
+      "total_vat": 9000,
+      "total": 99000
+    }
+  ],
+  "note": "Three telecom invoices in one PDF, one per page: amount/rate/VAT/total columns, no unit or price column, 'CỘNG (TOTAL)' with two numbers and the grand total in a merged cell."
+}

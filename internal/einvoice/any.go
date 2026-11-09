@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"path/filepath"
 	"strings"
@@ -38,7 +39,15 @@ func ParseAny(name string, data []byte) []Parsed {
 	case ext == ".xml":
 		p.Invoice, p.Warnings, p.Err = ParseXML(data)
 	case ext == ".pdf":
-		p.Invoice, p.Warnings, p.Err = ParsePDF(data)
+		groups := pdfInvoices(data)
+		if len(groups) > 1 {
+			return parsePDFGroups(name, data, groups)
+		}
+		var lines []string
+		if len(groups) == 1 {
+			lines = groups[0]
+		}
+		p.Invoice, p.Warnings, p.Err = parsePDF(data, lines)
 	case ext == ".html":
 		p.Invoice, p.Warnings, p.Err = ParseHTML(data)
 	case imageExts[ext]:
@@ -50,6 +59,23 @@ func ParseAny(name string, data []byte) []Parsed {
 		p.Warnings = []string{}
 	}
 	return []Parsed{p}
+}
+
+// parsePDFGroups reads a PDF holding several invoices (telecom bills: one invoice per page).
+func parsePDFGroups(name string, data []byte, groups [][]string) []Parsed {
+	var out []Parsed
+	for k, g := range groups {
+		p := Parsed{Name: fmt.Sprintf("%s (hóa đơn %d/%d)", name, k+1, len(groups)), Ext: ".pdf", Data: data}
+		p.Invoice, p.Warnings, p.Err = ParseText(g)
+		if p.Err == nil {
+			p.Invoice.Source = model.SourcePDF
+		}
+		if p.Warnings == nil {
+			p.Warnings = []string{}
+		}
+		out = append(out, p)
+	}
+	return out
 }
 
 func sniff(name string, data []byte) string {
