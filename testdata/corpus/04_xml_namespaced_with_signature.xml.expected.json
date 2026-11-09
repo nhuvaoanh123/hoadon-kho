@@ -1,0 +1,31 @@
+{
+  "should_parse": true,
+  "form": "1",
+  "serial": "C25AAD",
+  "number": "00000004",
+  "date": "2025-10-04",
+  "seller_tax": "0100000001",
+  "line_count": 2,
+  "lines": [
+    {
+      "name": "Bộ lưu điện UPS 1kVA",
+      "unit": "Cái",
+      "qty": 4,
+      "amount": 8400000,
+      "vat_rate": "10%",
+      "kind": "goods"
+    },
+    {
+      "name": "Ổn áp điện 10kVA",
+      "unit": "Cái",
+      "qty": 2,
+      "amount": 6800000,
+      "vat_rate": "10%",
+      "kind": "goods"
+    }
+  ],
+  "total_before_vat": 15200000,
+  "total_vat": 1520000,
+  "total": 16720000,
+  "note": "Root HDon carries a default namespace plus ds:-prefixed xmldsig Signature block (DSCKS) with fake signature values."
+}

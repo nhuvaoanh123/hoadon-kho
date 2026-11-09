@@ -1,0 +1,31 @@
+{
+  "should_parse": true,
+  "form": "1",
+  "serial": "C25AAE",
+  "number": "00000005",
+  "date": "2025-10-05",
+  "seller_tax": "0100000001",
+  "line_count": 2,
+  "lines": [
+    {
+      "name": "Bàn phím cơ văn phòng",
+      "unit": "Cái",
+      "qty": 8,
+      "amount": 3600000,
+      "vat_rate": "10%",
+      "kind": "goods"
+    },
+    {
+      "name": "Chuột không dây",
+      "unit": "Cái",
+      "qty": 8,
+      "amount": 2000000,
+      "vat_rate": "10%",
+      "kind": "goods"
+    }
+  ],
+  "total_before_vat": 5600000,
+  "total_vat": 560000,
+  "total": 6160000,
+  "note": "UTF-8 file with a leading BOM (EF BB BF)."
+}

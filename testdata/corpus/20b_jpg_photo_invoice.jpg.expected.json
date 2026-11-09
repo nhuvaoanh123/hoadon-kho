@@ -1,0 +1,32 @@
+{
+  "should_parse": true,
+  "form": "1",
+  "serial": "C25CAB",
+  "number": "00000020",
+  "date": "2025-10-20",
+  "seller_tax": "0100000001",
+  "line_count": 2,
+  "lines": [
+    {
+      "name": "Xe đạp thể thao khung nhôm",
+      "unit": "Cái",
+      "qty": 4,
+      "amount": 12800000,
+      "vat_rate": "10%",
+      "kind": "goods"
+    },
+    {
+      "name": "Mũ bảo hiểm xe đạp",
+      "unit": "Cái",
+      "qty": 4,
+      "amount": 1400000,
+      "vat_rate": "10%",
+      "kind": "goods"
+    }
+  ],
+  "total_before_vat": 14200000,
+  "total_vat": 1420000,
+  "total": 15620000,
+  "note": "JPG photo/screenshot of the same invoice as 20a, lossy-compressed image format, no text layer. App reads images via Windows OCR; any wrong value must be flagged, never silent.",
+  "ocr": true
+}

@@ -1,0 +1,31 @@
+{
+  "should_parse": true,
+  "form": "1",
+  "serial": "C25AAI",
+  "number": "00000009",
+  "date": "2025-10-07",
+  "seller_tax": "0100000001",
+  "line_count": 2,
+  "lines": [
+    {
+      "name": "Linh kiện điện tử nhập khẩu (USD)",
+      "unit": "Cái",
+      "qty": 100,
+      "amount": 1250.0,
+      "vat_rate": "10%",
+      "kind": "goods"
+    },
+    {
+      "name": "Chip vi xử lý (USD)",
+      "unit": "Cái",
+      "qty": 50,
+      "amount": 437.5,
+      "vat_rate": "10%",
+      "kind": "goods"
+    }
+  ],
+  "total_before_vat": 1687.5,
+  "total_vat": 168.75,
+  "total": 1856.25,
+  "note": "Foreign-currency (USD) invoice with TGia=25400 and 2-decimal line/total amounts in USD."
+}

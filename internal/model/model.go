@@ -27,24 +27,53 @@ type Party struct {
 	Address string `json:"address"`
 }
 
+// Issue is something that could not be verified. Block issues must be fixed, others confirmed.
+type Issue struct {
+	Text  string `json:"text"`
+	Block bool   `json:"block,omitempty"`
+}
+
+// Source formats, from most to least reliable.
+const (
+	SourceXML = "xml"
+	SourcePDF = "pdf"
+	// SourcePDFRaw is a PDF whose text order had to be rebuilt from glyphs (broken fonts).
+	SourcePDFRaw = "pdf-raw"
+	SourceHTML   = "html"
+	SourceOCR    = "ocr"
+)
+
+// Stated holds totals printed on a non-XML invoice, used to cross-check the lines.
+type Stated struct {
+	BeforeVAT float64 `json:"beforeVat"`
+	VAT       float64 `json:"vat"`
+	Total     float64 `json:"total"`
+	Words     string  `json:"words"`
+}
+
 // Line is one row of the goods/services table of an invoice.
 type Line struct {
-	STT       int     `json:"stt"`
-	Nature    int     `json:"nature"` // TChat: 1 HHDV, 2 khuyến mại, 3 chiết khấu, 4 ghi chú
-	Code      string  `json:"code"`
-	Name      string  `json:"name"`
-	Unit      string  `json:"unit"`
-	Qty       float64 `json:"qty"`
-	Price     float64 `json:"price"`
-	Amount    float64 `json:"amount"`
-	VATRate   string  `json:"vatRate"`
-	VATAmount float64 `json:"vatAmount"`
-	Kind      Kind    `json:"kind"`
-	Reason    string  `json:"reason"`
-	UserSet   bool    `json:"userSet,omitempty"` // kind chosen by the user in the review screen
-	ItemID    int64   `json:"itemId,omitempty"`
-	ItemCode  string  `json:"itemCode,omitempty"`
-	Cost      float64 `json:"cost,omitempty"` // giá trị nhập kho (VND, sau chiết khấu)
+	STT       int      `json:"stt"`
+	Nature    int      `json:"nature"` // TChat: 1 HHDV, 2 khuyến mại, 3 chiết khấu, 4 ghi chú
+	Code      string   `json:"code"`
+	Name      string   `json:"name"`
+	Unit      string   `json:"unit"`
+	Qty       float64  `json:"qty"`
+	Price     float64  `json:"price"`
+	Amount    float64  `json:"amount"`
+	VATRate   string   `json:"vatRate"`
+	VATAmount float64  `json:"vatAmount"`
+	Kind      Kind     `json:"kind"`
+	Reason    string   `json:"reason"`
+	UserSet   bool     `json:"userSet,omitempty"` // kind chosen by the user in the review screen
+	Notes     []string `json:"notes,omitempty"`   // điều bộ đọc đã phải suy ra (PDF/OCR)
+	Wrapped   bool     `json:"wrapped,omitempty"` // tên ghép từ nhiều dòng in
+	Certain   bool     `json:"certain"`           // phân loại hàng hóa/dịch vụ chắc chắn
+	Issues    []Issue  `json:"issues"`
+	Confirmed bool     `json:"confirmed,omitempty"` // người dùng đã đối chiếu các vấn đề của dòng
+	ItemID    int64    `json:"itemId,omitempty"`
+	ItemCode  string   `json:"itemCode,omitempty"`
+	Cost      float64  `json:"cost,omitempty"` // giá trị nhập kho (VND, sau chiết khấu)
 }
 
 // Invoice is a purchase (input) invoice.
@@ -66,6 +95,10 @@ type Invoice struct {
 	ReceiptNo      string  `json:"receiptNo,omitempty"` // số phiếu nhập kho
 	SourceFile     string  `json:"sourceFile,omitempty"`
 	CreatedAt      string  `json:"createdAt,omitempty"`
+	Source         string  `json:"source"`
+	Stated         Stated  `json:"stated"`
+	Issues         []Issue `json:"issues"`
+	Confirmed      bool    `json:"confirmed,omitempty"`
 	Lines          []Line  `json:"lines"`
 }
 

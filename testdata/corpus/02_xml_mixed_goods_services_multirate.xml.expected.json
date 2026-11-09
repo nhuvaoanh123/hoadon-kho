@@ -1,0 +1,71 @@
+{
+  "should_parse": true,
+  "form": "1",
+  "serial": "C25AAB",
+  "number": "00000002",
+  "date": "2025-10-02",
+  "seller_tax": "0100000001",
+  "line_count": 7,
+  "lines": [
+    {
+      "name": "Gạch men ốp tường 30x60",
+      "unit": "M2",
+      "qty": 120,
+      "amount": 11400000,
+      "vat_rate": "10%",
+      "kind": "goods"
+    },
+    {
+      "name": "Dịch vụ vận chuyển hàng hóa nội thành",
+      "unit": "Lần",
+      "qty": 2,
+      "amount": 1600000,
+      "vat_rate": "5%",
+      "kind": "service"
+    },
+    {
+      "name": "Dịch vụ lắp đặt hệ thống điều hòa",
+      "unit": "Bộ",
+      "qty": 3,
+      "amount": 3600000,
+      "vat_rate": "8%",
+      "kind": "service"
+    },
+    {
+      "name": "Dịch vụ sửa chữa máy bơm nước",
+      "unit": "Lần",
+      "qty": 1,
+      "amount": 650000,
+      "vat_rate": "10%",
+      "kind": "service"
+    },
+    {
+      "name": "Phí thuê kho bãi tháng 10/2025",
+      "unit": "Tháng",
+      "qty": 1,
+      "amount": 9000000,
+      "vat_rate": "5%",
+      "kind": "service"
+    },
+    {
+      "name": "Cước internet cáp quang doanh nghiệp tháng 10",
+      "unit": "Tháng",
+      "qty": 1,
+      "amount": 1500000,
+      "vat_rate": "10%",
+      "kind": "service"
+    },
+    {
+      "name": "Phí dịch vụ quản lý vận hành",
+      "unit": "Tháng",
+      "qty": 1,
+      "amount": 2200000,
+      "vat_rate": "8%",
+      "kind": "service"
+    }
+  ],
+  "total_before_vat": 29950000,
+  "total_vat": 2349000,
+  "total": 32299000,
+  "note": "Mixed goods + services, three VAT rates (5%/8%/10%) in one invoice."
+}

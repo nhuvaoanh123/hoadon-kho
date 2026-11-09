@@ -1,0 +1,31 @@
+{
+  "should_parse": true,
+  "form": "2",
+  "serial": "C25BCF",
+  "number": "00000017",
+  "date": "2025-10-17",
+  "seller_tax": "0100000001",
+  "line_count": 2,
+  "lines": [
+    {
+      "name": "Gạo ST25 đóng túi 5kg",
+      "unit": "Túi",
+      "qty": 100,
+      "amount": 15000000,
+      "vat_rate": null,
+      "kind": "goods"
+    },
+    {
+      "name": "Nước mắm truyền thống 500ml",
+      "unit": "Chai",
+      "qty": 200,
+      "amount": 9000000,
+      "vat_rate": null,
+      "kind": "goods"
+    }
+  ],
+  "total_before_vat": 24000000,
+  "total_vat": 0,
+  "total": 24000000,
+  "note": "Hóa đơn bán hàng (direct-method) PDF: table has no Thuế suất / Tiền thuế columns at all."
+}

@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Hóa đơn mẫu, dữ liệu giả để thử nghiệm -->
+<ToKhai><PBan>1.0</PBan><LoaiTK>01/GTGT</LoaiTK><KyKeKhai>10/2025</KyKeKhai><NNT><Ten>CÔNG TY TNHH MẪU A</Ten><MST>0100000001</MST></NNT><SoThue><TongSoThue>12345000</TongSoThue></SoThue></ToKhai>

@@ -1,0 +1,47 @@
+{
+  "should_parse": true,
+  "form": "1",
+  "serial": "C25AAH",
+  "number": "00000008",
+  "date": "2025-10-06",
+  "seller_tax": "0100000001",
+  "line_count": 4,
+  "lines": [
+    {
+      "name": "Máy lọc nước RO gia đình 9 cấp lọc",
+      "unit": "Cái",
+      "qty": 10,
+      "amount": 45000000,
+      "vat_rate": "10%",
+      "kind": "goods"
+    },
+    {
+      "name": "Quà tặng kèm: Bộ lọc thay thế (khuyến mại)",
+      "unit": "Bộ",
+      "qty": 10,
+      "amount": 0,
+      "vat_rate": "10%",
+      "kind": "goods"
+    },
+    {
+      "name": "Chiết khấu thương mại 5% theo hợp đồng số 12/2025",
+      "unit": "",
+      "qty": 1,
+      "amount": -2250000,
+      "vat_rate": "10%",
+      "kind": "discount"
+    },
+    {
+      "name": "Hàng đã kiểm tra chất lượng trước khi giao, bảo hành 24 tháng",
+      "unit": "",
+      "qty": null,
+      "amount": null,
+      "vat_rate": null,
+      "kind": "note"
+    }
+  ],
+  "total_before_vat": 42750000,
+  "total_vat": 4275000,
+  "total": 47025000,
+  "note": "Mix of TChat=1 goods, TChat=2 promo item (price 0), TChat=3 trade discount (negative amount, 5%), TChat=4 free-text note line."
+}

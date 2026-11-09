@@ -1,0 +1,31 @@
+{
+  "should_parse": true,
+  "form": "1",
+  "serial": "C25AAM",
+  "number": "00000123",
+  "date": "2025-10-10",
+  "seller_tax": "0100000001-001",
+  "line_count": 2,
+  "lines": [
+    {
+      "name": "Ống đồng các loại",
+      "unit": "Kg",
+      "qty": 12.5,
+      "amount": 2250000,
+      "vat_rate": "10%",
+      "kind": "goods"
+    },
+    {
+      "name": "Dây cáp điện lõi đồng",
+      "unit": "M",
+      "qty": 3.75,
+      "amount": 168750,
+      "vat_rate": "10%",
+      "kind": "goods"
+    }
+  ],
+  "total_before_vat": 2418750,
+  "total_vat": 241875,
+  "total": 2660625,
+  "note": "Decimal quantities (12.5 kg, 3.75 m), zero-padded SHDon '00000123', seller MST with branch suffix '-001'."
+}

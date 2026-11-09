@@ -52,10 +52,11 @@ type xHDon struct {
 			NMua  xParty  `xml:"NMua"`
 			Lines []xLine `xml:"DSHHDVu>HHDVu"`
 			TToan struct {
-				TgTCThue string
-				TgTThue  string
-				TgTTTBSo string
-				ByRate   []struct{ TSuat, ThTien, TThue string } `xml:"THTTLTSuat>LTSuat"`
+				TgTCThue  string
+				TgTThue   string
+				TgTTTBSo  string
+				TgTTTBChu string
+				ByRate    []struct{ TSuat, ThTien, TThue string } `xml:"THTTLTSuat>LTSuat"`
 			} `xml:"TToan"`
 		} `xml:"NDHDon"`
 	} `xml:"DLHDon"`
@@ -110,6 +111,9 @@ func fromXML(h *xHDon) (*model.Invoice, []string, error) {
 		TaxAuthCode: textutil.Clean(h.MCCQT.Value),
 		Seller:      party(nd.NBan),
 		Buyer:       party(nd.NMua),
+		Source:      model.SourceXML,
+		Stated: model.Stated{BeforeVAT: num(nd.TToan.TgTCThue), VAT: num(nd.TToan.TgTThue),
+			Total: num(nd.TToan.TgTTTBSo), Words: textutil.Clean(nd.TToan.TgTTTBChu)},
 	}
 	if len(inv.Date) > 10 {
 		inv.Date = inv.Date[:10]

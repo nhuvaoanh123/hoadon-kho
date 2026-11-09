@@ -344,7 +344,7 @@ func (b *book) receipt(sh string, set map[string]string, inv *model.Invoice) {
 	}
 	b.set(sh, 8, r, total, b.st.totN)
 	r += 2
-	b.merge(sh, 1, r, 8, r, "- Tổng số tiền (Viết bằng chữ): "+MoneyWords(total), b.st.text)
+	b.merge(sh, 1, r, 8, r, "- Tổng số tiền (Viết bằng chữ): "+textutil.MoneyWords(total), b.st.text)
 	b.merge(sh, 1, r+1, 8, r+1, "- Số chứng từ gốc kèm theo: 01 hóa đơn GTGT", b.st.text)
 	b.signatures(sh, r+3, 8, "Người lập phiếu", "Người giao hàng", "Thủ kho", "Kế toán trưởng")
 }

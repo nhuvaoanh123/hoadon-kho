@@ -1,0 +1,39 @@
+{
+  "should_parse": true,
+  "form": "1",
+  "serial": "C25BCD",
+  "number": "00000015",
+  "date": "2025-10-15",
+  "seller_tax": "0100000001",
+  "line_count": 3,
+  "lines": [
+    {
+      "name": "Vải may đồng phục công nghiệp",
+      "unit": "M",
+      "qty": 500,
+      "amount": 42500000,
+      "vat_rate": "10%",
+      "kind": "goods"
+    },
+    {
+      "name": "Chỉ may công nghiệp cao cấp",
+      "unit": "Cuộn",
+      "qty": 40,
+      "amount": 1800000,
+      "vat_rate": "8%",
+      "kind": "goods"
+    },
+    {
+      "name": "Dịch vụ may đo đồng phục theo mẫu",
+      "unit": "Bộ",
+      "qty": 20,
+      "amount": 1800000,
+      "vat_rate": "10%",
+      "kind": "service"
+    }
+  ],
+  "total_before_vat": 46100000,
+  "total_vat": 4574000,
+  "total": 50674000,
+  "note": "All numbers rendered with English/Western thousands separators and 2 decimals (e.g. 1,800,000.00), comma=thousands, dot=decimal."
+}

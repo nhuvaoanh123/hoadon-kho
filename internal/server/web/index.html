@@ -20,8 +20,8 @@
 <main>
   <section id="tab-upload" class="tab active">
     <div id="drop" class="drop">
-      <p><b>Kéo thả file hóa đơn vào đây</b> hoặc <label class="link">chọn file<input id="file" type="file" multiple accept=".xml,.pdf,.zip" hidden></label></p>
-      <p class="muted">Hỗ trợ: <b>XML</b> hóa đơn điện tử (chính xác nhất), <b>PDF</b> có chữ, <b>ZIP</b> tải từ cổng hóa đơn. Chọn nhiều file cùng lúc được.</p>
+      <p><b>Kéo thả file hóa đơn vào đây</b> hoặc <label class="link">chọn file<input id="file" type="file" multiple accept=".xml,.pdf,.zip,.html,.htm,.png,.jpg,.jpeg,.jfif,.bmp,.gif,.tif,.tiff,.webp" hidden></label></p>
+      <p class="muted">Hỗ trợ: <b>XML</b> hóa đơn điện tử (chính xác nhất), <b>PDF</b>, <b>ZIP</b> tải từ cổng hóa đơn, trang <b>HTML</b>, và <b>ảnh chụp/scan</b> (PNG, JPG... đọc bằng OCR của Windows, cần kiểm tra lại). Chọn nhiều file cùng lúc được.</p>
     </div>
     <div id="drafts"></div>
   </section>
@@ -64,7 +64,7 @@
       <h3>Thông tin doanh nghiệp (in trên chứng từ)</h3>
       <label>Tên doanh nghiệp <input name="company_name"></label>
       <label>Địa chỉ <input name="company_address"></label>
-      <label>Mã số thuế <input name="company_tax"></label>
+      <label>Mã số thuế <input name="company_tax"> <span class="muted">Dùng để cảnh báo hóa đơn không xuất cho doanh nghiệp bạn</span></label>
       <label>Tên kho <input name="warehouse"></label>
       <label>Căn cứ mẫu chứng từ
         <select id="basis-pick">
@@ -81,6 +81,9 @@
       <label>TK thuế GTGT được khấu trừ <input name="acct_vat" size="6"></label>
       <label>TK phải trả người bán <input name="acct_payable" size="6"></label>
       <button type="submit">Lưu cài đặt</button>
+      <h3>Đọc ảnh chụp hóa đơn (OCR của Windows)</h3>
+      <p id="ocr-status" class="muted">Đang kiểm tra...</p>
+      <button type="button" id="ocr-install" class="secondary" hidden>Cài OCR tiếng Việt (Windows sẽ hỏi quyền quản trị)</button>
       <p class="muted">Dữ liệu lưu tại: <code id="data-dir"></code><br>Sao lưu: chép cả thư mục này. Phiên bản: <span id="version"></span></p>
     </form>
   </section>

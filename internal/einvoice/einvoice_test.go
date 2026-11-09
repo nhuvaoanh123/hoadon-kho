@@ -21,7 +21,7 @@ func TestParseXML(t *testing.T) {
 	if inv.SerialFull() != "1C25MAU" || inv.Number != "3344" || inv.Date != "2025-09-23" {
 		t.Errorf("header: %+v", inv)
 	}
-	if inv.Seller.TaxCode != "0100000001" || inv.Buyer.TaxCode != "0200000002" {
+	if inv.Seller.TaxCode != "0100000003" || inv.Buyer.TaxCode != "0200000007" {
 		t.Errorf("tax codes: %q %q", inv.Seller.TaxCode, inv.Buyer.TaxCode)
 	}
 	if len(inv.Lines) != 7 {
@@ -49,11 +49,11 @@ var pdfLines = []string{
 	"Ngày (Date) 23 tháng (month) 09 năm (year) 2025",
 	"Mã CQT (Code): 00A1B2C3D4E5F60718293A4B5C6D7E8F90",
 	"CÔNG TY TNHH ĐIỆN LẠNH MẪU",
-	"Mã số thuế (Tax code): 0100000001",
+	"Mã số thuế (Tax code): 0100000003",
 	"Địa chỉ (Address): Số 1 phố Mẫu, Hà Nội",
 	"Họ tên người mua hàng (Buyer):",
 	"Tên đơn vị (Company's name): CÔNG TY TNHH NGƯỜI MUA MẪU",
-	"Mã số thuế (Tax code): 0200000002",
+	"Mã số thuế (Tax code): 0200000007",
 	"Địa chỉ (Address): Số 2 đường Mẫu, Hải Phòng",
 	"STT Tên hàng hóa, dịch vụ Đơn vị tính Số lượng Đơn giá Thành tiền Thuế suất Tiền thuế",
 	"(No) (Name of goods and services) (Unit) (Quantity) (Unit price) (Amount) (VAT rate) (VAT Amount)",
@@ -85,10 +85,10 @@ func TestParseText(t *testing.T) {
 	if inv.SerialFull() != "1C25MAU" || inv.Number != "3344" || inv.Date != "2025-09-23" {
 		t.Errorf("header: form=%q serial=%q no=%q date=%q", inv.Form, inv.Serial, inv.Number, inv.Date)
 	}
-	if inv.Seller.Name != "CÔNG TY TNHH ĐIỆN LẠNH MẪU" || inv.Seller.TaxCode != "0100000001" {
+	if inv.Seller.Name != "CÔNG TY TNHH ĐIỆN LẠNH MẪU" || inv.Seller.TaxCode != "0100000003" {
 		t.Errorf("seller: %+v", inv.Seller)
 	}
-	if inv.Buyer.Name != "CÔNG TY TNHH NGƯỜI MUA MẪU" || inv.Buyer.TaxCode != "0200000002" {
+	if inv.Buyer.Name != "CÔNG TY TNHH NGƯỜI MUA MẪU" || inv.Buyer.TaxCode != "0200000007" {
 		t.Errorf("buyer: %+v", inv.Buyer)
 	}
 	want := []string{
@@ -127,10 +127,10 @@ var chromeLines = []string{
 	"(VAT INVOICE) Số (No.): 00003345",
 	"Ngày (Date) 24 tháng (month) 09 năm (year) 2025",
 	"CÔNG TY TNHH ĐIỆN LẠNH MẪU",
-	"Mã số thuế (Tax code): 0100000001",
+	"Mã số thuế (Tax code): 0100000003",
 	"Địa chỉ (Address): Số 1 phố Mẫu, Hà Nội",
 	"Tên đơn vị (Company's name): CÔNG TY TNHH NGƯỜI MUA MẪU",
-	"Mã số thuế (Tax code): 0200000002",
+	"Mã số thuế (Tax code): 0200000007",
 	"Địa chỉ (Address): Số 2 đường Mẫu, Hải Phòng",
 	"Tên hàng hóa, dịch",
 	"STT Đơn vị tính Số lượng Đơn giá Thành tiền Thuế suất Tiền thuế",

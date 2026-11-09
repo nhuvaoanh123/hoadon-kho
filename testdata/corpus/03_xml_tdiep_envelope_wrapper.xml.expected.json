@@ -1,0 +1,31 @@
+{
+  "should_parse": true,
+  "form": "1",
+  "serial": "C25AAC",
+  "number": "00000003",
+  "date": "2025-10-03",
+  "seller_tax": "0100000001",
+  "line_count": 2,
+  "lines": [
+    {
+      "name": "Máy tính để bàn cấu hình văn phòng",
+      "unit": "Cái",
+      "qty": 5,
+      "amount": 49000000,
+      "vat_rate": "10%",
+      "kind": "goods"
+    },
+    {
+      "name": "Màn hình LCD 24 inch",
+      "unit": "Cái",
+      "qty": 5,
+      "amount": 11500000,
+      "vat_rate": "10%",
+      "kind": "goods"
+    }
+  ],
+  "total_before_vat": 60500000,
+  "total_vat": 6050000,
+  "total": 66550000,
+  "note": "HDon wrapped in <TDiep><TTChung>...</TTChung><DLieu><HDon>...</HDon></DLieu></TDiep> transport envelope."
+}

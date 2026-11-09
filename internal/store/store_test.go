@@ -24,7 +24,7 @@ func open(t *testing.T) *Store {
 
 func inv(no, date string, lines ...model.Line) *model.Invoice {
 	return &model.Invoice{Form: "1", Serial: "C25AAA", Number: no, Date: date,
-		Seller: model.Party{Name: "NCC Mẫu", TaxCode: "0100000001"}, Lines: lines}
+		Seller: model.Party{Name: "NCC Mẫu", TaxCode: "0100000003"}, Lines: lines}
 }
 
 func goods(name string, qty, amount float64) model.Line {

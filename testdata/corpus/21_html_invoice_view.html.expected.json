@@ -1,0 +1,39 @@
+{
+  "should_parse": true,
+  "form": "1",
+  "serial": "C25CAC",
+  "number": "00000021",
+  "date": "2025-10-21",
+  "seller_tax": "0100000001",
+  "line_count": 3,
+  "lines": [
+    {
+      "name": "Laptop văn phòng 14 inch",
+      "unit": "Cái",
+      "qty": 5,
+      "amount": 72500000,
+      "vat_rate": "10%",
+      "kind": "goods"
+    },
+    {
+      "name": "Túi chống sốc laptop",
+      "unit": "Cái",
+      "qty": 5,
+      "amount": 1250000,
+      "vat_rate": "8%",
+      "kind": "goods"
+    },
+    {
+      "name": "Dịch vụ cài đặt phần mềm bản quyền",
+      "unit": "Lần",
+      "qty": 5,
+      "amount": 1500000,
+      "vat_rate": "10%",
+      "kind": "service"
+    }
+  ],
+  "total_before_vat": 75250000,
+  "total_vat": 7500000,
+  "total": 82750000,
+  "note": "HTML 'bản thể hiện' (display view) of an invoice saved directly as .html, with selectable text in an HTML table rather than XML or PDF."
+}

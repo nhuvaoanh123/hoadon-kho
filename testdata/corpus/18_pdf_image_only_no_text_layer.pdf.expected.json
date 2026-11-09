@@ -1,0 +1,31 @@
+{
+  "should_parse": false,
+  "form": "1",
+  "serial": "C25BCG",
+  "number": "00000018",
+  "date": "2025-10-18",
+  "seller_tax": "0100000001",
+  "line_count": 2,
+  "lines": [
+    {
+      "name": "Bàn ghế học sinh liền khối",
+      "unit": "Bộ",
+      "qty": 50,
+      "amount": 32500000,
+      "vat_rate": "10%",
+      "kind": "goods"
+    },
+    {
+      "name": "Bảng viết từ tính",
+      "unit": "Cái",
+      "qty": 10,
+      "amount": 12000000,
+      "vat_rate": "10%",
+      "kind": "goods"
+    }
+  ],
+  "total_before_vat": 44500000,
+  "total_vat": 4450000,
+  "total": 48950000,
+  "note": "PDF page contains only a rasterized screenshot image, no selectable/extractable text layer; a text-extraction parser should fail or need OCR. should_parse=false reflects a plain text-layer parser; values above are the ground truth an OCR-capable parser should recover."
+}

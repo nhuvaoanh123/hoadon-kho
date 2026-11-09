@@ -1,0 +1,79 @@
+{
+  "should_parse": true,
+  "form": "1",
+  "serial": "C25AAN",
+  "number": "00000012",
+  "date": "2025-10-11",
+  "seller_tax": "0100000001",
+  "line_count": 8,
+  "lines": [
+    {
+      "name": "Ống đồng phi 9.52",
+      "unit": "Cái",
+      "qty": 20,
+      "amount": 1700000,
+      "vat_rate": "10%",
+      "kind": "goods"
+    },
+    {
+      "name": "Giấy vệ sinh",
+      "unit": "Thùng",
+      "qty": 15,
+      "amount": 4800000,
+      "vat_rate": "8%",
+      "kind": "goods"
+    },
+    {
+      "name": "Bảo dưỡng định kỳ",
+      "unit": "Lần",
+      "qty": 2,
+      "amount": 900000,
+      "vat_rate": "10%",
+      "kind": "service"
+    },
+    {
+      "name": "Phi van chuyen",
+      "unit": "chuyen",
+      "qty": 3,
+      "amount": 600000,
+      "vat_rate": "5%",
+      "kind": "service"
+    },
+    {
+      "name": "Bộ dụng cụ sửa chữa",
+      "unit": "Bộ",
+      "qty": 4,
+      "amount": 600000,
+      "vat_rate": "10%",
+      "kind": "goods"
+    },
+    {
+      "name": "Túi đựng linh kiện",
+      "unit": "Gói",
+      "qty": 30,
+      "amount": 360000,
+      "vat_rate": "8%",
+      "kind": "goods"
+    },
+    {
+      "name": "Phí thuê thiết bị tháng",
+      "unit": "Tháng",
+      "qty": 1,
+      "amount": 1800000,
+      "vat_rate": "10%",
+      "kind": "service"
+    },
+    {
+      "name": "Dịch vụ tư vấn kỹ thuật",
+      "unit": "Lần",
+      "qty": 2,
+      "amount": 1800000,
+      "vat_rate": "10%",
+      "kind": "service"
+    }
+  ],
+  "total_before_vat": 12560000,
+  "total_vat": 1122800,
+  "total": 13682800,
+  "note": "Tricky item names/units: diacritic-free name 'Phi van chuyen' with unlikely unit 'chuyen', plus Bộ/Thùng/Gói/Tháng/Lần units and numeric-looking names (phi 9.52)."
+}

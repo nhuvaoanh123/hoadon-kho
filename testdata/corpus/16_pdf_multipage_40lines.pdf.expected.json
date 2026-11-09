@@ -1,0 +1,359 @@
+{
+  "should_parse": true,
+  "form": "1",
+  "serial": "C25BCE",
+  "number": "00000016",
+  "date": "2025-10-16",
+  "seller_tax": "0100000001",
+  "line_count": 43,
+  "lines": [
+    {
+      "name": "Bu lông M8x40",
+      "unit": "Cái",
+      "qty": 11,
+      "amount": 170500,
+      "vat_rate": "8%",
+      "kind": "goods"
+    },
+    {
+      "name": "Đai ốc M8",
+      "unit": "Cái",
+      "qty": 12,
+      "amount": 192000,
+      "vat_rate": "10%",
+      "kind": "goods"
+    },
+    {
+      "name": "Vòng đệm phẳng M8",
+      "unit": "Cái",
+      "qty": 13,
+      "amount": 214500,
+      "vat_rate": "5%",
+      "kind": "goods"
+    },
+    {
+      "name": "Vít tự khoan 4x25",
+      "unit": "Cái",
+      "qty": 14,
+      "amount": 238000,
+      "vat_rate": "8%",
+      "kind": "goods"
+    },
+    {
+      "name": "Bản lề inox 3 ly",
+      "unit": "Cái",
+      "qty": 15,
+      "amount": 262500,
+      "vat_rate": "10%",
+      "kind": "goods"
+    },
+    {
+      "name": "Tay nắm cửa nhôm",
+      "unit": "Cái",
+      "qty": 16,
+      "amount": 288000,
+      "vat_rate": "5%",
+      "kind": "goods"
+    },
+    {
+      "name": "Ổ khóa cửa chính",
+      "unit": "Cái",
+      "qty": 17,
+      "amount": 314500,
+      "vat_rate": "8%",
+      "kind": "goods"
+    },
+    {
+      "name": "Ray trượt ngăn kéo",
+      "unit": "Cái",
+      "qty": 18,
+      "amount": 342000,
+      "vat_rate": "10%",
+      "kind": "goods"
+    },
+    {
+      "name": "Tay co thủy lực",
+      "unit": "Cái",
+      "qty": 19,
+      "amount": 370500,
+      "vat_rate": "5%",
+      "kind": "goods"
+    },
+    {
+      "name": "Kính cường lực 8mm",
+      "unit": "Cái",
+      "qty": 20,
+      "amount": 400000,
+      "vat_rate": "8%",
+      "kind": "goods"
+    },
+    {
+      "name": "Nẹp nhôm chữ U",
+      "unit": "Cái",
+      "qty": 21,
+      "amount": 430500,
+      "vat_rate": "10%",
+      "kind": "goods"
+    },
+    {
+      "name": "Keo silicon trung tính",
+      "unit": "Cái",
+      "qty": 22,
+      "amount": 462000,
+      "vat_rate": "5%",
+      "kind": "goods"
+    },
+    {
+      "name": "Băng keo vải",
+      "unit": "Cái",
+      "qty": 23,
+      "amount": 494500,
+      "vat_rate": "8%",
+      "kind": "goods"
+    },
+    {
+      "name": "Sơn lót kim loại",
+      "unit": "Cái",
+      "qty": 24,
+      "amount": 528000,
+      "vat_rate": "10%",
+      "kind": "goods"
+    },
+    {
+      "name": "Sơn phủ chống rỉ",
+      "unit": "Cái",
+      "qty": 25,
+      "amount": 562500,
+      "vat_rate": "5%",
+      "kind": "goods"
+    },
+    {
+      "name": "Dây rút nhựa 20cm",
+      "unit": "Cái",
+      "qty": 26,
+      "amount": 598000,
+      "vat_rate": "8%",
+      "kind": "goods"
+    },
+    {
+      "name": "Ống luồn dây điện 16mm",
+      "unit": "Cái",
+      "qty": 27,
+      "amount": 634500,
+      "vat_rate": "10%",
+      "kind": "goods"
+    },
+    {
+      "name": "Công tắc điện đơn",
+      "unit": "Cái",
+      "qty": 28,
+      "amount": 672000,
+      "vat_rate": "5%",
+      "kind": "goods"
+    },
+    {
+      "name": "Ổ cắm điện đôi",
+      "unit": "Cái",
+      "qty": 29,
+      "amount": 710500,
+      "vat_rate": "8%",
+      "kind": "goods"
+    },
+    {
+      "name": "Đèn led âm trần 9W",
+      "unit": "Cái",
+      "qty": 30,
+      "amount": 750000,
+      "vat_rate": "10%",
+      "kind": "goods"
+    },
+    {
+      "name": "Máng đèn led 1m2",
+      "unit": "Cái",
+      "qty": 31,
+      "amount": 790500,
+      "vat_rate": "5%",
+      "kind": "goods"
+    },
+    {
+      "name": "Quạt thông gió âm trần",
+      "unit": "Cái",
+      "qty": 32,
+      "amount": 832000,
+      "vat_rate": "8%",
+      "kind": "goods"
+    },
+    {
+      "name": "Cảm biến hồng ngoại",
+      "unit": "Cái",
+      "qty": 33,
+      "amount": 874500,
+      "vat_rate": "10%",
+      "kind": "goods"
+    },
+    {
+      "name": "Van nước PVC D32",
+      "unit": "Cái",
+      "qty": 34,
+      "amount": 918000,
+      "vat_rate": "5%",
+      "kind": "goods"
+    },
+    {
+      "name": "Co nối PVC D32",
+      "unit": "Cái",
+      "qty": 35,
+      "amount": 962500,
+      "vat_rate": "8%",
+      "kind": "goods"
+    },
+    {
+      "name": "Băng tan lõi vàng",
+      "unit": "Cái",
+      "qty": 36,
+      "amount": 1008000,
+      "vat_rate": "10%",
+      "kind": "goods"
+    },
+    {
+      "name": "Ống nhựa PVC D50",
+      "unit": "Cái",
+      "qty": 37,
+      "amount": 1054500,
+      "vat_rate": "5%",
+      "kind": "goods"
+    },
+    {
+      "name": "Lưới inox chống côn trùng",
+      "unit": "Cái",
+      "qty": 38,
+      "amount": 1102000,
+      "vat_rate": "8%",
+      "kind": "goods"
+    },
+    {
+      "name": "Khung cửa nhôm hệ 700",
+      "unit": "Cái",
+      "qty": 39,
+      "amount": 1150500,
+      "vat_rate": "10%",
+      "kind": "goods"
+    },
+    {
+      "name": "Cửa kính cường lực",
+      "unit": "Cái",
+      "qty": 40,
+      "amount": 1200000,
+      "vat_rate": "5%",
+      "kind": "goods"
+    },
+    {
+      "name": "Tay nắm inox 304",
+      "unit": "Cái",
+      "qty": 41,
+      "amount": 1250500,
+      "vat_rate": "8%",
+      "kind": "goods"
+    },
+    {
+      "name": "Chốt cửa âm sàn",
+      "unit": "Cái",
+      "qty": 42,
+      "amount": 1302000,
+      "vat_rate": "10%",
+      "kind": "goods"
+    },
+    {
+      "name": "Bánh xe công nghiệp",
+      "unit": "Cái",
+      "qty": 43,
+      "amount": 1354500,
+      "vat_rate": "5%",
+      "kind": "goods"
+    },
+    {
+      "name": "Dây đai truyền động",
+      "unit": "Cái",
+      "qty": 44,
+      "amount": 1408000,
+      "vat_rate": "8%",
+      "kind": "goods"
+    },
+    {
+      "name": "Vòng bi công nghiệp 6204",
+      "unit": "Cái",
+      "qty": 45,
+      "amount": 1462500,
+      "vat_rate": "10%",
+      "kind": "goods"
+    },
+    {
+      "name": "Phớt chắn dầu",
+      "unit": "Cái",
+      "qty": 46,
+      "amount": 1518000,
+      "vat_rate": "5%",
+      "kind": "goods"
+    },
+    {
+      "name": "Mỡ bôi trơn công nghiệp",
+      "unit": "Cái",
+      "qty": 47,
+      "amount": 1574500,
+      "vat_rate": "8%",
+      "kind": "goods"
+    },
+    {
+      "name": "Dầu thủy lực 20L",
+      "unit": "Cái",
+      "qty": 48,
+      "amount": 1632000,
+      "vat_rate": "10%",
+      "kind": "goods"
+    },
+    {
+      "name": "Lọc gió công nghiệp",
+      "unit": "Cái",
+      "qty": 49,
+      "amount": 1690500,
+      "vat_rate": "5%",
+      "kind": "goods"
+    },
+    {
+      "name": "Dây curoa A38",
+      "unit": "Cái",
+      "qty": 50,
+      "amount": 1750000,
+      "vat_rate": "8%",
+      "kind": "goods"
+    },
+    {
+      "name": "Thanh ren M10",
+      "unit": "Cái",
+      "qty": 51,
+      "amount": 1810500,
+      "vat_rate": "10%",
+      "kind": "goods"
+    },
+    {
+      "name": "Bát sắt chữ L",
+      "unit": "Cái",
+      "qty": 52,
+      "amount": 1872000,
+      "vat_rate": "5%",
+      "kind": "goods"
+    },
+    {
+      "name": "Tấm tôn lạnh 0.45mm",
+      "unit": "Cái",
+      "qty": 53,
+      "amount": 1934500,
+      "vat_rate": "8%",
+      "kind": "goods"
+    }
+  ],
+  "total_before_vat": 39087000,
+  "total_vat": 2985525,
+  "total": 42072525,
+  "note": "Multi-page PDF with 43 line items (A4, spills onto multiple pages), mixed 5/8/10% rates."
+}

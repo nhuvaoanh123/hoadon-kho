@@ -25,7 +25,8 @@ var serviceKeywords = []string{
 // Cụm từ chứa từ khóa dịch vụ nhưng là hàng hóa.
 var goodsPhrases = []string{
 	"giấy vệ sinh", "thiết bị vệ sinh", "bồn vệ sinh", "nước vệ sinh", "dung dịch vệ sinh",
-	"khăn vệ sinh",
+	"khăn vệ sinh", "dụng cụ sửa chữa", "vật tư sửa chữa", "phụ tùng sửa chữa", "vật tư lắp đặt",
+	"phụ kiện lắp đặt", "dụng cụ vệ sinh",
 }
 
 var goodsNameHints = []string{"thiết bị", "máy", "vật tư", "linh kiện", "phụ tùng", "nguyên liệu", "vật liệu"}
@@ -38,7 +39,7 @@ var goodsUnits = set("cái", "chiếc", "bộ", "kg", "kilogam", "g", "gam", "gr
 	"m", "mét", "md", "m2", "m3", "cm", "mm", "lít", "l", "ml", "hộp", "thùng", "cuộn", "tấm", "cây",
 	"bao", "túi", "chai", "lon", "đôi", "ram", "quyển", "cuốn", "tập", "viên", "ống", "can", "bình",
 	"sợi", "thanh", "khối", "pcs", "pc", "set", "con", "vỉ", "lọ", "hũ", "két", "lốc", "kiện",
-	"tuýp", "bánh", "cặp", "máy", "cục", "miếng", "bịch", "quả", "bó", "gói", "hòm", "xô", "chậu")
+	"tuýp", "bánh", "cặp", "máy", "cục", "miếng", "bịch", "quả", "bó", "hòm", "xô", "chậu")
 
 func set(xs ...string) map[string]bool {
 	m := map[string]bool{}
@@ -54,26 +55,28 @@ type Classifier struct {
 	KnownItem func(key string) bool
 }
 
-// Classify returns the kind of l and a human-readable reason (Vietnamese).
-func (c Classifier) Classify(l model.Line) (model.Kind, string) {
+// Classify returns the kind of l, a human-readable reason (Vietnamese) and whether
+// the evidence is conclusive; inconclusive results must be confirmed by the user.
+func (c Classifier) Classify(l model.Line) (model.Kind, string, bool) {
 	switch l.Nature {
 	case 3:
-		return model.KindDiscount, "Dòng chiết khấu thương mại trên hóa đơn"
+		return model.KindDiscount, "Dòng chiết khấu thương mại trên hóa đơn", true
 	case 4:
-		return model.KindNote, "Dòng ghi chú/diễn giải, không có giá trị"
+		return model.KindNote, "Dòng ghi chú/diễn giải, không có giá trị", true
 	}
 	key := textutil.ItemKey(l.Name, l.Unit)
 	if c.Rule != nil {
 		if k, ok := c.Rule(key); ok {
-			return k, "Theo lựa chọn bạn đã sửa trước đây"
+			return k, "Theo lựa chọn bạn đã xác nhận trước đây", true
 		}
 	}
 	if c.KnownItem != nil && c.KnownItem(key) {
-		return model.KindGoods, "Mặt hàng đã có trong kho"
+		return model.KindGoods, "Mặt hàng đã có trong kho", true
 	}
 	if strings.TrimSpace(l.Name) == "" && l.Amount == 0 {
-		return model.KindNote, "Dòng trống"
+		return model.KindNote, "Dòng trống", true
 	}
+	var kwHit, gUnit bool
 
 	score := 0
 	var why []string
@@ -88,6 +91,7 @@ func (c Classifier) Classify(l model.Line) (model.Kind, string) {
 		}
 		if strings.Contains(words, " "+kw+" ") {
 			score += 3
+			kwHit = true
 			why = append(why, "tên có \""+kw+"\"")
 			break
 		}
@@ -112,6 +116,7 @@ func (c Classifier) Classify(l model.Line) (model.Kind, string) {
 		}
 	case goodsUnits[unit]:
 		score -= 2
+		gUnit = true
 		why = append(why, "ĐVT \""+l.Unit+"\" là đơn vị hàng hóa")
 	case serviceUnits[unit]:
 		score += 2
@@ -121,12 +126,12 @@ func (c Classifier) Classify(l model.Line) (model.Kind, string) {
 		why = append(why, "hàng khuyến mại")
 	}
 	if score > 0 {
-		return model.KindService, "Dịch vụ: " + strings.Join(why, ", ")
+		return model.KindService, "Dịch vụ: " + strings.Join(why, ", "), score >= 3 && !gUnit
 	}
 	if len(why) == 0 {
-		why = append(why, "mặc định khi không có dấu hiệu dịch vụ")
+		why = append(why, "không có dấu hiệu rõ ràng")
 	}
-	return model.KindGoods, "Hàng hóa: " + strings.Join(why, ", ")
+	return model.KindGoods, "Hàng hóa: " + strings.Join(why, ", "), score <= -2 && !kwHit
 }
 
 // foldMatch maps an unaccented unit to its accented form, goods units first.

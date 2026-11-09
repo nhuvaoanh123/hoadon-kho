@@ -56,3 +56,18 @@ input, select { font: inherit; padding: 5px 7px; border: 1px solid #c7ced8; bord
 #toast div.bad { background: #b91c1c; }
 .outform { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .modal .grid th { top: 0; }
+.linewarn { color: #b91c1c; font-weight: 600; margin-bottom: 2px; }
+.issues { margin-bottom: 4px; font-size: 12px; }
+.issues .blk { color: #b91c1c; font-weight: 600; }
+.issues .chk { color: #b45309; }
+.issues .confirm { display: block; margin-top: 3px; color: #111827; font-weight: 600; cursor: pointer; }
+.issuecell { min-width: 260px; }
+.grid tr.bad td { background: #fff1f1; }
+.grid tr.ok td { background: #f0fdf4; }
+.status { margin: 10px 0 0; padding: 8px 12px; border-radius: 6px; font-weight: 600; }
+.status.yes { background: #dcfce7; color: #166534; }
+.status.no { background: #fee2e2; color: #991b1b; }
+.source { font-size: 13px; margin: -4px 0 8px; font-weight: 600; }
+.src-xml { color: #166534; } .src-pdf, .src-html { color: #1e40af; } .src-ocr, .src-pdf-raw { color: #b91c1c; }
+#drafts > .draft > div > .issues { background: #fff7ed; border-left: 4px solid #f59e0b; padding: 6px 10px; }
+.grid input[type=checkbox] { width: auto; margin-right: 4px; }

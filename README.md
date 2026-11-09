@@ -5,8 +5,29 @@ hàng hóa và dịch vụ, đưa hàng hóa vào kho**, rồi xuất ra các fi
 (phiếu nhập kho, bảng kê mua vào, nhập-xuất-tồn, thẻ kho, file nhập liệu MISA/Fast).
 
 - Một file `HoaDonKho.exe` duy nhất, **không cần cài đặt**, không cần Internet, dữ liệu nằm trên máy bạn.
-- Đọc **XML hóa đơn điện tử** theo Thông tư 78/2021 (chính xác tuyệt đối), **PDF** có lớp chữ, và **ZIP**
-  tải từ cổng hóa đơn điện tử.
+- Đọc **XML hóa đơn điện tử** theo Thông tư 78/2021 (chính xác tuyệt đối), **PDF**, **ZIP** tải từ cổng
+  hóa đơn điện tử, trang **HTML**, và **ảnh chụp/scan** (PNG, JPG... qua OCR có sẵn của Windows).
+- **Không bao giờ sai mà không báo**: mọi điểm app không kiểm chứng được đều được chỉ rõ từng dòng,
+  và hóa đơn chỉ lưu được khi bạn đã sửa hoặc xác nhận hết (xem *Kiểm chứng* bên dưới).
+
+## Kiểm chứng: app chỉ coi là đúng khi chứng minh được
+
+| Nguồn | Mức tin cậy |
+|---|---|
+| XML | Dữ liệu gốc của hóa đơn điện tử: chính xác tuyệt đối, vẫn được kiểm tra chéo |
+| PDF / HTML | Chữ đọc đúng từng ký tự; số được đối chiếu bằng phép tính |
+| Ảnh (OCR) | Chỉ là bản gợi ý: **mọi dòng** phải được đối chiếu với bản gốc trước khi lưu |
+
+Mỗi hóa đơn được kiểm:
+- từng dòng: **SL × đơn giá = thành tiền**, **tiền thuế = thành tiền × thuế suất**, có đủ tên/SL/ĐVT;
+- cả hóa đơn: **tổng các dòng = tổng in trên hóa đơn**, **số tiền bằng chữ khớp tổng**;
+- **MST** người bán đúng chữ số kiểm tra; **MST người mua là MST công ty bạn** (điền trong Cài đặt);
+- phân loại hàng hóa/dịch vụ: khi dấu hiệu không rõ ràng, app hỏi lại thay vì tự đoán;
+- PDF in tên hàng trên nhiều dòng: app ghép lại và yêu cầu bạn kiểm tra tên.
+
+Dòng nào không qua được kiểm tra hiện **nền đỏ kèm lý do**: ✖ là lỗi phải sửa (ví dụ thiếu số lượng),
+⚠ là điểm phải đối chiếu (tick *"Tôi đã đối chiếu với hóa đơn gốc"*). Sửa một số thì dấu xác nhận của dòng đó
+bị bỏ và app kiểm tra lại ngay. Nút **Lưu** chỉ bật khi không còn điểm nào chưa xử lý.
 
 ## Tải về và chạy
 
@@ -20,7 +41,7 @@ Dữ liệu lưu ở thư mục `HoaDonKho-data` cạnh file exe. **Sao lưu = c
 
 ## Cách dùng
 
-1. **Nhập hóa đơn**: kéo thả các file XML/PDF/ZIP vào. Mỗi hóa đơn hiện ra một bảng để kiểm tra:
+1. **Nhập hóa đơn**: kéo thả các file XML/PDF/ZIP/HTML/ảnh vào. Mỗi hóa đơn hiện ra một bảng để kiểm tra:
    - Dòng **xanh lá** = hàng hóa → vào kho; dòng **xanh dương** = dịch vụ → chi phí, không vào kho.
    - Cột *Lý do* cho biết vì sao app phân loại như vậy. Sai thì đổi ở cột *Phân loại*,
      **lần sau app tự nhớ** cho mặt hàng đó.
@@ -52,16 +73,21 @@ Dữ liệu lưu ở thư mục `HoaDonKho-data` cạnh file exe. **Sao lưu = c
 
 ## Giới hạn
 
-- Ảnh chụp/PDF scan không có chữ thì không đọc được: hãy tải **file XML** từ
+- **Ảnh chụp** đọc bằng OCR có sẵn của Windows: chữ to, rõ thì đọc khá tốt, nhưng cột số chữ nhỏ hay bị
+  thiếu/sai. App luôn báo các chỗ đó, nhưng cách chính xác nhất vẫn là tải **file XML** từ
   [hoadondientu.gdt.gov.vn](https://hoadondientu.gdt.gov.vn) hoặc email của người bán.
-- PDF đọc theo bố cục phổ biến; luôn kiểm tra trước khi lưu. Gặp PDF đọc sai, chạy
-  `HoaDonKho.exe -dump-pdf "duong-dan\hoa-don.pdf"` và gửi kết quả (đã xóa thông tin nhạy cảm) qua mục Issues.
+- Muốn OCR đọc được dấu tiếng Việt: vào **Cài đặt → Cài OCR tiếng Việt** (Windows hỏi quyền quản trị),
+  hoặc thêm ngôn ngữ Tiếng Việt trong Cài đặt Windows.
+- Phiếu thu bán lẻ, bill siêu thị/nhà hàng không phải hóa đơn GTGT nên thường không đọc ra dòng hàng.
+- Gặp file đọc sai, chạy `HoaDonKho.exe -dump-pdf "duong-dan\hoa-don.pdf"` (PDF hoặc ảnh) để xem chữ app
+  đọc được, và gửi kết quả (đã xóa thông tin nhạy cảm) qua mục Issues.
 - File nhập liệu không phải mẫu chính thức của MISA/Fast; tên cột rõ ràng để ghép khi nhập.
 
 ## Tùy chọn dòng lệnh
 
 ```
 HoaDonKho.exe -port 8765 -data "D:\DuLieuKho" -no-browser
+HoaDonKho.exe -parse hoa-don-1.xml hoa-don-2.pdf     # in kết quả đọc + các điểm cần kiểm tra (JSON)
 ```
 
 ## Build từ mã nguồn
@@ -69,7 +95,7 @@ HoaDonKho.exe -port 8765 -data "D:\DuLieuKho" -no-browser
 Cần Go 1.27 trở lên:
 
 ```
-go test ./...
+go test ./...      # gồm bộ hóa đơn mẫu trong testdata/corpus: không được có giá trị sai mà không bị báo
 GOOS=windows GOARCH=amd64 CGO_ENABLED=0 go build -ldflags "-s -w" -o dist/HoaDonKho.exe .
 ```
 
