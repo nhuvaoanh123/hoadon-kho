@@ -71,7 +71,92 @@ func Open(path string) (*Store, error) {
 		db.Close()
 		return nil, fmt.Errorf("khởi tạo CSDL: %w", err)
 	}
+	if err := migrateKeys(db); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("cập nhật key: %w", err)
+	}
 	return &Store{db: db}, nil
+}
+
+// migrateKeys recomputes items/kind_rules keys with the current tone
+// folding; a key collision with an existing row is left as is.
+func migrateKeys(db *sql.DB) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	rows, err := tx.Query(`SELECT id, key, name, unit FROM items`)
+	if err != nil {
+		return err
+	}
+	type itemRow struct {
+		id              int64
+		key, name, unit string
+	}
+	var items []itemRow
+	for rows.Next() {
+		var it itemRow
+		if err := rows.Scan(&it.id, &it.key, &it.name, &it.unit); err != nil {
+			rows.Close()
+			return err
+		}
+		items = append(items, it)
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	rows.Close()
+	for _, it := range items {
+		nk := textutil.ItemKey(it.name, it.unit)
+		if nk == it.key {
+			continue
+		}
+		var exists int64
+		if err := tx.QueryRow(`SELECT id FROM items WHERE key=?`, nk).Scan(&exists); err == nil {
+			continue // collision, leave as is
+		} else if !errors.Is(err, sql.ErrNoRows) {
+			return err
+		}
+		if _, err := tx.Exec(`UPDATE items SET key=? WHERE id=?`, nk, it.id); err != nil {
+			return err
+		}
+	}
+
+	krows, err := tx.Query(`SELECT key FROM kind_rules`)
+	if err != nil {
+		return err
+	}
+	var keys []string
+	for krows.Next() {
+		var k string
+		if err := krows.Scan(&k); err != nil {
+			krows.Close()
+			return err
+		}
+		keys = append(keys, k)
+	}
+	if err := krows.Err(); err != nil {
+		return err
+	}
+	krows.Close()
+	for _, k := range keys {
+		nk := textutil.ToneNew(k)
+		if nk == k {
+			continue
+		}
+		var exists string
+		if err := tx.QueryRow(`SELECT key FROM kind_rules WHERE key=?`, nk).Scan(&exists); err == nil {
+			continue // collision, leave as is
+		} else if !errors.Is(err, sql.ErrNoRows) {
+			return err
+		}
+		if _, err := tx.Exec(`UPDATE kind_rules SET key=? WHERE key=?`, nk, k); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
 }
 
 // Close closes the database.

@@ -20,9 +20,17 @@
 <main>
   <section id="tab-upload" class="tab active">
     <div id="drop" class="drop">
-      <p><b>Kéo thả file hóa đơn vào đây</b> hoặc <label class="link">chọn file<input id="file" type="file" multiple accept=".xml,.pdf,.zip,.html,.htm,.png,.jpg,.jpeg,.jfif,.bmp,.gif,.tif,.tiff,.webp" hidden></label></p>
+      <p><b>Kéo thả file hoặc cả thư mục hóa đơn vào đây</b> hoặc <label class="link">chọn file<input id="file" type="file" multiple accept=".xml,.pdf,.zip,.html,.htm,.png,.jpg,.jpeg,.jfif,.bmp,.gif,.tif,.tiff,.webp" hidden></label>
+        · <label class="link">chọn thư mục<input id="folder" type="file" webkitdirectory multiple hidden></label></p>
+      <p><label><input type="checkbox" id="auto-save"> Tự lưu hóa đơn đã khớp hết (không còn điểm ⚠ hay ✖ nào); chỉ hóa đơn cần kiểm tra mới hiện ra bên dưới</label></p>
       <p class="muted">Hỗ trợ: <b>XML</b> hóa đơn điện tử (chính xác nhất), <b>PDF</b>, <b>ZIP</b> tải từ cổng hóa đơn, trang <b>HTML</b>, và <b>ảnh chụp/scan</b> (PNG, JPG... đọc bằng OCR của Windows, cần kiểm tra lại). Chọn nhiều file cùng lúc được.</p>
     </div>
+    <details class="paste">
+      <summary>Dán chữ hóa đơn (từ email, Zalo, hoặc chép từ PDF)</summary>
+      <textarea id="paste-text" rows="10" placeholder="Dán toàn bộ nội dung hóa đơn: ký hiệu, số, ngày, MST người bán và bảng hàng hóa"></textarea>
+      <button id="paste-go">Đọc chữ đã dán</button>
+    </details>
+    <div id="summary"></div>
     <div id="drafts"></div>
   </section>
 

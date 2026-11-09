@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/nhuvaoanh123/hoadon-kho/internal/model"
+	"github.com/nhuvaoanh123/hoadon-kho/internal/textutil"
 )
 
 func open(t *testing.T) *Store {
@@ -90,5 +91,60 @@ func TestDeleteBlockedByIssue(t *testing.T) {
 	}
 	if err := s.DeleteInvoice(id); err == nil {
 		t.Fatal("delete must be refused while stock was issued")
+	}
+}
+
+// TestMigrateTonePlacement checks that Open folds old-style item/kind_rules
+// keys to the new tone placement, so both spellings resolve to one item.
+func TestMigrateTonePlacement(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "mig")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, "kho.db")
+	name, unit := textutil.Clean("Sơn hoà tan"), textutil.Clean("Lít")
+	oldItemKey := textutil.Lower(name) + "|" + textutil.Lower(unit)
+	oldRuleKey := textutil.Lower("Phí vận chuyển hoà tan") + "|"
+	if newKey := textutil.ItemKey(name, unit); newKey == oldItemKey {
+		t.Fatalf("fixture key %q does not actually need folding", oldItemKey)
+	}
+
+	s, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.db.Exec(`INSERT INTO items(code,name,unit,key,created_at) VALUES(?,?,?,?,?)`,
+		"HH00001", name, unit, oldItemKey, now()); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.db.Exec(`INSERT INTO kind_rules(key,kind,updated_at) VALUES(?,?,?)`,
+		oldRuleKey, string(model.KindService), now()); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	s2, err := Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s2.Close()
+	newItemKey := textutil.ItemKey(name, unit)
+	if s2.KnownItem(oldItemKey) {
+		t.Fatalf("old key %q should have been migrated away", oldItemKey)
+	}
+	if !s2.KnownItem(newItemKey) {
+		t.Fatalf("new key %q not found after migration", newItemKey)
+	}
+	if !s2.KnownItem(textutil.ItemKey("Sơn hòa tan", "Lít")) {
+		t.Fatal("new-style spelling should resolve to the migrated item")
+	}
+	newRuleKey := textutil.ToneNew(oldRuleKey)
+	if _, ok := s2.RuleLookup(oldRuleKey); ok {
+		t.Fatalf("old rule key %q should have been migrated away", oldRuleKey)
+	}
+	if k, ok := s2.RuleLookup(newRuleKey); !ok || k != model.KindService {
+		t.Fatalf("rule not migrated: %v %v", k, ok)
 	}
 }

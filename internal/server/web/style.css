@@ -71,3 +71,9 @@ input, select { font: inherit; padding: 5px 7px; border: 1px solid #c7ced8; bord
 .src-xml { color: #166534; } .src-pdf, .src-html { color: #1e40af; } .src-ocr, .src-pdf-raw { color: #b91c1c; }
 #drafts > .draft > div > .issues { background: #fff7ed; border-left: 4px solid #f59e0b; padding: 6px 10px; }
 .grid input[type=checkbox] { width: auto; margin-right: 4px; }
+.badge.x { background: #fecaca; color: #7f1d1d; }
+.paste { background: #fff; border-radius: 10px; margin: 12px 0; padding: 10px 16px; }
+.paste summary { cursor: pointer; font-weight: 600; }
+.paste textarea { width: 100%; box-sizing: border-box; margin: 8px 0; font: 13px/1.4 monospace; }
+.summary { background: #fff; border-radius: 10px; border-left: 4px solid #0f4c81; margin: 16px 0; padding: 12px 16px; }
+.summary h3 { margin: 0 0 6px; font-size: 15px; }

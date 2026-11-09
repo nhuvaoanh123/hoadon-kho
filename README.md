@@ -17,17 +17,20 @@ hàng hóa và dịch vụ, đưa hàng hóa vào kho**, rồi xuất ra các fi
 | XML | Dữ liệu gốc của hóa đơn điện tử: chính xác tuyệt đối, vẫn được kiểm tra chéo |
 | PDF / HTML | Chữ đọc đúng từng ký tự; số được đối chiếu bằng phép tính |
 | Ảnh (OCR) | Chỉ là bản gợi ý: **mọi dòng** phải được đối chiếu với bản gốc trước khi lưu |
+| Chữ dán vào | Số được đối chiếu bằng phép tính; cả hóa đơn cần một lần xác nhận đã đối chiếu với bản gốc |
 
 Mỗi hóa đơn được kiểm:
 - từng dòng: **SL × đơn giá = thành tiền**, **tiền thuế = thành tiền × thuế suất**, có đủ tên/SL/ĐVT;
 - cả hóa đơn: **tổng các dòng = tổng in trên hóa đơn**, **số tiền bằng chữ khớp tổng**;
 - **MST** người bán đúng chữ số kiểm tra; **MST người mua là MST công ty bạn** (điền trong Cài đặt);
 - phân loại hàng hóa/dịch vụ: khi dấu hiệu không rõ ràng, app hỏi lại thay vì tự đoán;
-- PDF in tên hàng trên nhiều dòng: app ghép lại và yêu cầu bạn kiểm tra tên.
+- PDF in tên hàng trên nhiều dòng: app ghép lại và yêu cầu bạn kiểm tra tên (trừ khi tên ghép trùng đúng
+  một mặt hàng đã có trong kho).
 
 Dòng nào không qua được kiểm tra hiện **nền đỏ kèm lý do**: ✖ là lỗi phải sửa (ví dụ thiếu số lượng),
 ⚠ là điểm phải đối chiếu (tick *"Tôi đã đối chiếu với hóa đơn gốc"*). Sửa một số thì dấu xác nhận của dòng đó
 bị bỏ và app kiểm tra lại ngay. Nút **Lưu** chỉ bật khi không còn điểm nào chưa xử lý.
+Khi đã đối chiếu xong cả hóa đơn, nút **Xác nhận cả N điểm ⚠** đánh dấu một lần cho mọi điểm ⚠ (lỗi ✖ vẫn phải sửa).
 
 ## Tải về và chạy
 
@@ -46,6 +49,10 @@ Dữ liệu lưu ở thư mục `HoaDonKho-data` cạnh file exe. **Sao lưu = c
    - Cột *Lý do* cho biết vì sao app phân loại như vậy. Sai thì đổi ở cột *Phân loại*,
      **lần sau app tự nhớ** cho mặt hàng đó.
    - Bấm **Lưu & nhập kho**. Hóa đơn trùng (cùng MST người bán, ký hiệu, số) sẽ bị chặn.
+   - **Nhập hàng loạt**: kéo thả cả thư mục (hoặc *chọn thư mục*). Khi bật *Tự lưu hóa đơn đã khớp hết*,
+     hóa đơn không còn điểm ⚠/✖ nào được lưu luôn; chỉ hóa đơn cần kiểm tra hiện ra. Bảng tổng kết liệt kê
+     hóa đơn đã lưu, trùng và lỗi, tải được dạng CSV.
+   - **Dán chữ hóa đơn** (từ email, Zalo, chép từ PDF): mở mục *Dán chữ hóa đơn*, dán rồi bấm *Đọc chữ đã dán*.
 2. **Hóa đơn đã nhập**: xem lại, tải phiếu nhập kho từng hóa đơn, mở file gốc, xóa nếu nhập nhầm.
 3. **Tồn kho**: số lượng, giá vốn bình quân, giá trị tồn; **Xuất kho** khi bán/dùng; xem **Thẻ kho**.
 4. **Báo cáo Excel**: chọn kỳ (tháng/quý/năm) rồi bấm loại báo cáo cần tải.

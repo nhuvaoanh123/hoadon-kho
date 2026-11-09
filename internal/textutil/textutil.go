@@ -15,9 +15,30 @@ import (
 
 var spaces = regexp.MustCompile(`\s+`)
 
-// Clean converts to NFC, collapses whitespace and trims.
+// isInvisible reports zero-width runes and soft hyphen, dropped by Clean.
+func isInvisible(r rune) bool {
+	switch r {
+	case '\u200B', '\u200C', '\u200D', '\uFEFF', '\u2060', '\u00AD':
+		return true
+	}
+	return false
+}
+
+// Clean converts to NFC, maps Unicode spaces (NBSP, narrow NBSP, ...) to ' ',
+// drops zero-width runes and soft hyphen, collapses whitespace and trims.
 func Clean(s string) string {
-	return strings.TrimSpace(spaces.ReplaceAllString(norm.NFC.String(s), " "))
+	s = norm.NFC.String(s)
+	b := make([]rune, 0, len(s))
+	for _, r := range s {
+		switch {
+		case isInvisible(r):
+		case unicode.IsSpace(r):
+			b = append(b, ' ')
+		default:
+			b = append(b, r)
+		}
+	}
+	return strings.TrimSpace(spaces.ReplaceAllString(string(b), " "))
 }
 
 // Lower is Clean plus lower case.
@@ -45,8 +66,41 @@ func Words(s string) string {
 	return " " + spaces.ReplaceAllString(string(b), " ") + " "
 }
 
-// ItemKey identifies an inventory item by name and unit.
-func ItemKey(name, unit string) string { return Lower(name) + "|" + Lower(unit) }
+// vietnamese combining tone marks (NFD), in order huyền, sắc, hỏi, ngã, nặng.
+func isToneMark(r rune) bool {
+	switch r {
+	case '\u0300', '\u0301', '\u0309', '\u0303', '\u0323':
+		return true
+	}
+	return false
+}
+
+// ToneNew folds old-style tone on a syllable-final oa/oe/uy diphthong
+// ("hoà"->"hòa"); "qu"+y ("quý") is kept since u there belongs to "qu".
+func ToneNew(s string) string {
+	r := []rune(norm.NFD.String(s))
+	for i := 0; i+2 < len(r); i++ {
+		v1, v2, mark := r[i], r[i+1], r[i+2]
+		if !isToneMark(mark) {
+			continue
+		}
+		if !((v1 == 'o' && (v2 == 'a' || v2 == 'e')) || (v1 == 'u' && v2 == 'y')) {
+			continue
+		}
+		if v1 == 'u' && i > 0 && r[i-1] == 'q' {
+			continue
+		}
+		if i+3 < len(r) && unicode.IsLetter(r[i+3]) {
+			continue // not syllable-final
+		}
+		r[i+1], r[i+2] = mark, v2
+	}
+	return norm.NFC.String(string(r))
+}
+
+// ItemKey identifies an inventory item by name and unit, folding old/new
+// tone placement so both spellings map to the same item.
+func ItemKey(name, unit string) string { return ToneNew(Lower(name)) + "|" + ToneNew(Lower(unit)) }
 
 // ParseNumber parses a number written either in Vietnamese style
 // ("22.500.000,00") or plain/English style ("22500000.00", "1,800.5").

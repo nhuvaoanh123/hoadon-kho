@@ -63,19 +63,102 @@ $$("nav button").forEach(b => (b.onclick = () => {
 const drop = $("#drop");
 ["dragenter", "dragover"].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.add("over"); }));
 ["dragleave", "drop"].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.remove("over"); }));
-drop.addEventListener("drop", ev => upload(ev.dataTransfer.files));
-$("#file").onchange = ev => { upload(ev.target.files); ev.target.value = ""; };
+drop.addEventListener("drop", async ev => upload(await droppedFiles(ev.dataTransfer)));
+$("#file").onchange = ev => { upload([...ev.target.files]); ev.target.value = ""; };
+$("#folder").onchange = ev => { upload([...ev.target.files]); ev.target.value = ""; };
+const auto = $("#auto-save");
+auto.checked = localStorage.getItem("hdk-auto") !== "0";
+auto.onchange = () => localStorage.setItem("hdk-auto", auto.checked ? "1" : "0");
+
+// droppedFiles walks dropped folders; plain files come through unchanged.
+async function droppedFiles(dt) {
+  const entries = [...dt.items].map(i => i.webkitGetAsEntry && i.webkitGetAsEntry()).filter(Boolean);
+  if (!entries.length) return [...dt.files];
+  const out = [];
+  const walk = async e => {
+    if (e.isFile) { out.push(await new Promise((ok, bad) => e.file(ok, bad))); return; }
+    const r = e.createReader();
+    for (let batch; (batch = await new Promise((ok, bad) => r.readEntries(ok, bad))).length;) for (const x of batch) await walk(x);
+  };
+  for (const e of entries) await walk(e);
+  return out;
+}
+
+// Files from a folder: invoice formats, plus .txt or no extension (content is sniffed).
+const INVOICE_EXT = /\.(xml|pdf|zip|html?|png|jpe?g|jfif|bmp|gif|tiff?|webp|txt)$|^[^.]+$/i;
 
 async function upload(files) {
-  if (!files.length) return;
-  const fd = new FormData();
-  for (const f of files) fd.append("files", f);
-  toast(`Đang đọc ${files.length} file...`);
-  try {
-    const drafts = await api("POST", "/api/parse", fd);
-    drafts.forEach(d => $("#drafts").prepend(draftCard(d)));
-  } catch (e) { toast(e.message, true); }
+  files = files.filter(f => INVOICE_EXT.test(f.name) && f.size < 64 << 20);
+  if (!files.length) { toast("Không có file hóa đơn nào (XML, PDF, ZIP, HTML, ảnh)", true); return; }
+  const batch = auto.checked;
+  const sum = { files: files.length, saved: [], review: 0, dup: [], failed: [] };
+  // Gửi từng nhóm nhỏ: không vượt giới hạn tải lên và thấy được tiến độ.
+  const chunks = [];
+  for (let i = 0, size = 0, cur = []; i < files.length; i++) {
+    cur.push(files[i]); size += files[i].size;
+    if (cur.length === 20 || size > 24 << 20 || i === files.length - 1) { chunks.push(cur); cur = []; size = 0; }
+  }
+  let done = 0;
+  for (const chunk of chunks) {
+    toast(`Đang đọc file ${done + 1}–${done + chunk.length} / ${files.length}...`);
+    const fd = new FormData();
+    chunk.forEach(f => fd.append("files", f, f.webkitRelativePath || f.name));
+    try {
+      const r = await api("POST", batch ? "/api/batch" : "/api/parse", fd);
+      if (batch) sum.saved.push(...r.saved);
+      (batch ? r.drafts : r).forEach(d => {
+        if (d.error) sum.failed.push({ fileName: d.fileName, why: d.error });
+        else if (batch && d.duplicateOf) { sum.dup.push(d); return; }
+        else sum.review++;
+        $("#drafts").prepend(draftCard(d));
+      });
+    } catch (e) { chunk.forEach(f => sum.failed.push({ fileName: f.name, why: e.message })); }
+    done += chunk.length;
+  }
+  if (batch || files.length > 1) showSummary(sum, batch);
 }
+
+const SUMMARY_HEAD = ["Kết quả", "File", "Số HĐ", "Ngày", "Người bán / lỗi", "Tổng", "Phiếu nhập"];
+
+function showSummary(sum, batch) {
+  const inv = d => d.invoice;
+  const rows = [
+    ...sum.saved.map(s => ["Đã tự lưu", s.fileName, s.number, dmy(s.date), s.seller, money(s.total), s.receiptNo || "—"]),
+    ...sum.dup.map(d => ["Trùng, bỏ qua", d.fileName, inv(d).number, dmy(inv(d).date), inv(d).seller.name, money(inv(d).total * inv(d).exRate), ""]),
+    ...sum.failed.map(f => ["Lỗi", f.fileName, "", "", f.why, "", ""]),
+  ];
+  const csv = () => {
+    const q = v => `"${String(v).replace(/"/g, '""')}"`;
+    const text = [SUMMARY_HEAD, ...rows].map(r => r.map(q).join(",")).join("\r\n");
+    const a = h("a", { href: URL.createObjectURL(new Blob(["﻿" + text], { type: "text/csv" })), download: "ket-qua-nhap-hoa-don.csv" });
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  };
+  const box = h("div", { class: "summary" },
+    h("h3", {}, `Đã đọc ${sum.files} file`),
+    h("p", {},
+      batch ? h("span", { class: "badge g" }, `${sum.saved.length} hóa đơn tự lưu`) : null,
+      h("span", { class: "badge s" }, `${sum.review} cần kiểm tra bên dưới`),
+      sum.dup.length ? h("span", { class: "badge d" }, `${sum.dup.length} đã nhập trước đó`) : null,
+      sum.failed.length ? h("span", { class: "badge x" }, `${sum.failed.length} lỗi`) : null),
+    rows.length ? h("table", { class: "grid" },
+      h("thead", {}, h("tr", {}, SUMMARY_HEAD.map(x => h("th", {}, x)))),
+      h("tbody", {}, rows.map(r => h("tr", {}, r.map(x => h("td", {}, x)))))) : null,
+    h("div", { class: "actions" },
+      rows.length ? h("button", { class: "secondary", onclick: csv }, "Tải báo cáo (CSV)") : null,
+      h("button", { class: "secondary", onclick: () => box.remove() }, "Đóng")));
+  $("#summary").prepend(box);
+}
+
+$("#paste-go").onclick = async () => {
+  const text = $("#paste-text").value;
+  if (!text.trim()) { toast("Hãy dán chữ hóa đơn vào ô trước", true); return; }
+  try {
+    const drafts = await api("POST", "/api/parse-text", { text });
+    drafts.forEach(d => $("#drafts").prepend(draftCard(d)));
+    if (drafts.some(d => !d.error)) $("#paste-text").value = "";
+  } catch (e) { toast(e.message, true); }
+};
 
 const SOURCES = {
   xml: "XML hóa đơn điện tử — dữ liệu gốc, chính xác tuyệt đối",
@@ -83,7 +166,14 @@ const SOURCES = {
   html: "HTML — đọc từ trang hiển thị, đã đối chiếu bằng phép tính",
   ocr: "ẢNH (OCR) — chỉ là bản gợi ý, phải đối chiếu từng dòng với bản gốc",
   "pdf-raw": "PDF lỗi font — thứ tự chữ phải dựng lại, phải đối chiếu từng dòng với bản gốc",
+  text: "Chữ dán vào — đã đối chiếu bằng phép tính, cần đối chiếu với hóa đơn gốc",
 };
+
+// softOpen counts ⚠ points not yet confirmed (✖ must be fixed, never confirmed in bulk).
+function softOpen(inv) {
+  const n = (issues, confirmed) => confirmed ? 0 : (issues || []).filter(i => !i.block).length;
+  return n(inv.issues, inv.confirmed) + inv.lines.reduce((a, l) => a + n(l.issues, l.confirmed), 0);
+}
 
 // unresolved counts what still blocks saving (the server enforces the same rule).
 function unresolved(inv) {
@@ -118,6 +208,13 @@ function draftCard(d) {
   const invBox = h("div");
   const status = h("div", { class: "status" });
   const save = h("button", {}, "Lưu & nhập kho");
+  const confirmAll = h("button", { class: "secondary" });
+  confirmAll.onclick = () => {
+    if (!confirm(`Bạn đã đối chiếu cả ${softOpen(inv)} điểm ⚠ của hóa đơn này với bản gốc và thấy đúng?`)) return;
+    if ((inv.issues || []).some(i => !i.block)) inv.confirmed = true;
+    inv.lines.forEach(l => { if ((l.issues || []).some(i => !i.block)) l.confirmed = true; });
+    paint();
+  };
   const rows = [];
   let timer;
 
@@ -150,6 +247,9 @@ function draftCard(d) {
       : n ? `Còn ${n} điểm chưa kiểm chứng được: sửa các dòng ✖ và đánh dấu đã đối chiếu các dòng ⚠ rồi mới lưu.`
         : "✔ Mọi số liệu đã khớp hoặc đã được bạn xác nhận: có thể lưu.";
     save.disabled = n > 0 || d.duplicateOf > 0;
+    const soft = softOpen(inv);
+    confirmAll.hidden = soft < 2;
+    confirmAll.textContent = `✔ Xác nhận cả ${soft} điểm ⚠`;
   };
 
   // recheck asks the server to re-verify after an edit; edited lines lose their confirmation.
@@ -228,6 +328,7 @@ function draftCard(d) {
       h("span", { class: "muted" }, "Xanh lá = vào kho, xanh dương = chi phí. Phân loại bạn chọn sẽ được nhớ cho lần sau."),
       h("button", { class: "secondary", onclick: addLine }, "+ Thêm dòng"),
       h("button", { class: "secondary", onclick: () => card.remove() }, "Bỏ qua"),
+      confirmAll,
       save));
   paint();
   return card;
