@@ -1,0 +1,162 @@
+{
+  "should_parse": true,
+  "form": "1",
+  "serial": "C25MAU",
+  "number": "4521",
+  "date": "2025-11-05",
+  "seller_tax": "0100000003",
+  "line_count": 21,
+  "lines": [
+    {
+      "name": "Thiết bị bay hơi DD 26.2/140",
+      "unit": "Cái",
+      "qty": 1,
+      "amount": 22500000,
+      "vat_rate": "8%"
+    },
+    {
+      "name": "Quạt công nghiệp lạnh YWF4D-400S-E5L",
+      "unit": "Cái",
+      "qty": 15,
+      "amount": 11700000,
+      "vat_rate": "8%"
+    },
+    {
+      "name": "Lọc ẩm DML 163",
+      "unit": "Cái",
+      "qty": 40,
+      "amount": 6800000,
+      "vat_rate": "8%"
+    },
+    {
+      "name": "Lọc ẩm DML 164",
+      "unit": "Cái",
+      "qty": 40,
+      "amount": 7200000,
+      "vat_rate": "8%"
+    },
+    {
+      "name": "Gas lạnh R410A",
+      "unit": "Kg",
+      "qty": 120,
+      "amount": 11400000,
+      "vat_rate": "8%"
+    },
+    {
+      "name": "Van chặn 2 chiều 3/8",
+      "unit": "Cái",
+      "qty": 20,
+      "amount": 1300000,
+      "vat_rate": "10%"
+    },
+    {
+      "name": "Rắc co đồng 1/2",
+      "unit": "Cái",
+      "qty": 30,
+      "amount": 750000,
+      "vat_rate": "10%"
+    },
+    {
+      "name": "Ống bảo ôn cách nhiệt 16mm",
+      "unit": "Cây",
+      "qty": 50,
+      "amount": 900000,
+      "vat_rate": "8%"
+    },
+    {
+      "name": "Băng quấn ống điều hòa",
+      "unit": "Cuộn",
+      "qty": 60,
+      "amount": 720000,
+      "vat_rate": "8%"
+    },
+    {
+      "name": "Giá đỡ cục nóng 60cm",
+      "unit": "Bộ",
+      "qty": 10,
+      "amount": 1500000,
+      "vat_rate": "8%"
+    },
+    {
+      "name": "Máy hút chân không 2 cấp",
+      "unit": "Cái",
+      "qty": 2,
+      "amount": 6400000,
+      "vat_rate": "8%"
+    },
+    {
+      "name": "Bộ nong loe ống đồng",
+      "unit": "Bộ",
+      "qty": 3,
+      "amount": 2550000,
+      "vat_rate": "8%"
+    },
+    {
+      "name": "Kìm cắt ống đồng",
+      "unit": "Cái",
+      "qty": 5,
+      "amount": 1100000,
+      "vat_rate": "8%"
+    },
+    {
+      "name": "Que hàn bạc 2%",
+      "unit": "Kg",
+      "qty": 1.5,
+      "amount": 2700000,
+      "vat_rate": "10%"
+    },
+    {
+      "name": "Đồng hồ nạp ga CM-536-G-R410",
+      "unit": "Bộ",
+      "qty": 2,
+      "amount": 1360000,
+      "vat_rate": "8%"
+    },
+    {
+      "name": "Đồng hồ nạp ga VMG-2-R22-B",
+      "unit": "Bộ",
+      "qty": 3,
+      "amount": 2340000,
+      "vat_rate": "8%"
+    },
+    {
+      "name": "Ống đồng tinh luyện cỡ 6.35mm x 0.71mm",
+      "unit": "Kg",
+      "qty": 9.32,
+      "amount": 2609600,
+      "vat_rate": "10%"
+    },
+    {
+      "name": "Ống đồng tinh luyện cỡ 9.52mm x 0.71mm",
+      "unit": "Kg",
+      "qty": 14.46,
+      "amount": 4048800,
+      "vat_rate": "10%"
+    },
+    {
+      "name": "Ống đồng tinh luyện cỡ 15.88mm x 0.71mm",
+      "unit": "Kg",
+      "qty": 24.6,
+      "amount": 6888000,
+      "vat_rate": "10%"
+    },
+    {
+      "name": "Ống đồng tinh luyện cỡ 19.05mm x 0.81mm",
+      "unit": "Kg",
+      "qty": 33.96,
+      "amount": 9508800,
+      "vat_rate": "10%"
+    },
+    {
+      "name": "Hợp kim đồng Harris 0 (Đồng thanh và que hàn đồng)",
+      "unit": "Kg",
+      "qty": 11.3,
+      "amount": 5085000,
+      "vat_rate": "8%"
+    }
+  ],
+  "total_before_vat": 109360200,
+  "total_vat": 9304920,
+  "total": 118665120,
+  "note": "2-page PDF like a tester's invoice: wrapped names, units Bộ/Kg, page 2 repeats the column header after 'tiếp theo trang trước – trang 2/2'."
+}

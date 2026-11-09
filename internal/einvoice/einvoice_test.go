@@ -93,10 +93,10 @@ func TestParseText(t *testing.T) {
 	}
 	want := []string{
 		"Thiết bị bay hơi DD 26.2/140",
-		"Quạt công nghiệp lạnh YWF4D- 400S-E5L",
+		"Quạt công nghiệp lạnh YWF4D-400S-E5L",
 		"Lọc ẩm DML 163",
 		"Lọc ẩm DML 164",
-		"Ống nối bằng đồng chữ S 1.5/8- 1.3/8",
+		"Ống nối bằng đồng chữ S 1.5/8-1.3/8",
 		"Khớp nối bằng đồng hình chữ V 1 3/8",
 		"Gas lạnh R22",
 	}

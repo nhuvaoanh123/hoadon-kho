@@ -56,6 +56,14 @@ func PDFLines(data []byte) ([]string, error) {
 
 // readPDF also reports whether any page needed the glyph fallback (text order unreliable).
 func readPDF(data []byte) (lines []string, scrambled bool, err error) {
+	if ls, perr := pdfiumLines(data); perr == nil && len(strings.Join(ls, "")) >= 20 {
+		return ls, false, nil
+	}
+	return legacyPDF(data)
+}
+
+// legacyPDF is the pure-Go fallback reader for PDFs PDFium cannot open.
+func legacyPDF(data []byte) (lines []string, scrambled bool, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			lines, err = nil, fmt.Errorf("không đọc được PDF: %v", r)
@@ -195,7 +203,7 @@ func glued(a, b pdf.Text) bool {
 }
 
 var (
-	reSerial  = regexp.MustCompile(`(?i)k[ýy] hi[ệe]u[^:]*:\s*([12]?[CK][0-9]{2}[A-Z]{2,4})\b`)
+	reSerial  = regexp.MustCompile(`(?i)k[ýy] hi[ệe]u[^:]*:\s*([1-6]?[CK][0-9]{2}[A-Z]{2,4})\b`)
 	reNumber  = regexp.MustCompile(`(?i)\bs[ốo]\s*(?:h[óo]a đ[ơo]n)?\s*(?:\(\s*no\.?\s*\))?\s*:\s*0*([0-9]{1,8})\b`)
 	reDate    = regexp.MustCompile(`(?i)ng[àa]y\D{0,20}?(\d{1,2})\s*th[áa]ng\D{0,20}?(\d{1,2})\s*n[ăa]m\D{0,20}?(\d{4})`)
 	reTax     = regexp.MustCompile(`(?i)(?:m[ãa] s[ốo] thu[ếe]|\bmst\b)[^:0-9]{0,30}:?\s*([0-9][0-9 ]{8,13}[0-9](?:-[0-9]{3})?)`)
@@ -207,7 +215,7 @@ var (
 	reSeller  = regexp.MustCompile(`(?i)(?:đ[ơo]n v[ịi] b[áa]n h[àa]ng|ng[ưu][ờo]i b[áa]n)[^:]*:\s*(.+)`)
 	reAddr    = regexp.MustCompile(`(?i)^đ[ịi]a ch[ỉi][^:]*:\s*(.+)`)
 	reCompany = regexp.MustCompile(`^(CÔNG TY|CTY|DOANH NGHIỆP|HỘ KINH DOANH|CHI NHÁNH|TẬP ĐOÀN|HỢP TÁC XÃ)\b`)
-	reSerial2 = regexp.MustCompile(`\b([12Il|])([CK]\d{2}[A-Z]{3})\b`)
+	reSerial2 = regexp.MustCompile(`\b([1-6Il|])([CK]\d{2}[A-Z]{3})\b`)
 	reNumber2 = regexp.MustCompile(`(?i)\(no\.?\)\s*[:.]?\s*0*([0-9]{1,8})\b`)
 	reNumber3 = regexp.MustCompile(`\b0{2,}([1-9][0-9]{0,6})\b`)
 	reDate2   = regexp.MustCompile(`(?i)\(date\)\D{0,15}?(\d{1,2})\D{1,25}?(\d{1,2})\D{1,25}?(\d{4})`)
@@ -229,9 +237,9 @@ func ParseText(lines []string) (*model.Invoice, []string, error) {
 		}
 		inv.Form, inv.Serial = s[:1], s[1:]
 	} else if m := reSerial2.FindStringSubmatch(all); m != nil {
-		inv.Form, inv.Serial = "1", m[2]
-		if m[1] == "2" {
-			inv.Form = "2"
+		inv.Form, inv.Serial = m[1], m[2]
+		if m[1] < "1" || m[1] > "6" { // OCR đọc "1" thành I, l, |
+			inv.Form = "1"
 		}
 	}
 	for _, re := range []*regexp.Regexp{reNumber, reNumber2, reNumber3} {
@@ -375,6 +383,11 @@ func endOfTable(low string, seenItems bool) bool {
 	if !seenItems {
 		return false
 	}
+	for _, w := range []string{"tien hang", "thanh toan", "bang chu", "in words"} {
+		if strings.Contains(low, w) {
+			return true
+		}
+	}
 	n := 0
 	for _, w := range headerWords {
 		if strings.Contains(low, w) {
@@ -397,7 +410,7 @@ func parseItems(lines []string, inv *model.Invoice) {
 	}
 	var pending []string // dòng chữ bị xuống dòng, chưa biết thuộc dòng hàng nào
 	var heads []int      // số dòng tên nằm phía trên dòng số của từng mặt hàng
-	inTable := true
+	inTable, newPage := true, false
 	for _, ln := range lines[start:] {
 		low := textutil.Fold(ln)
 		if inTable && endOfTable(low, len(inv.Lines) > 0) {
@@ -407,13 +420,24 @@ func parseItems(lines []string, inv *model.Invoice) {
 			statedLine(ln, low, &inv.Stated)
 			continue
 		}
+		if pageHeader(low) {
+			// Sang trang: dòng chờ là phần dưới tên mặt hàng trước; tiêu đề lặp lại bị bỏ như ở trang đầu.
+			if !newPage && len(pending) > 0 && len(inv.Lines) > 0 {
+				prev := &inv.Lines[len(inv.Lines)-1]
+				prev.Name = joinName(prev.Name, pending)
+				prev.Wrapped = true
+			}
+			pending, newPage = nil, true
+			continue
+		}
 		l, ok := itemRow(ln, hasCode)
 		if !ok {
 			pending = append(pending, ln)
 			continue
 		}
 		var tail int // số dòng chờ thuộc về mặt hàng trước (phần dưới của tên)
-		if len(inv.Lines) == 0 {
+		if len(inv.Lines) == 0 || newPage {
+			newPage = false
 			pending = pending[max(0, len(pending)-1):] // các dòng trước là tiêu đề cột
 			if l.Name != "" {
 				pending = nil
@@ -430,12 +454,12 @@ func parseItems(lines []string, inv *model.Invoice) {
 			}
 			if tail > 0 {
 				prev := &inv.Lines[len(inv.Lines)-1]
-				prev.Name = textutil.Clean(prev.Name + " " + strings.Join(pending[:tail], " "))
+				prev.Name = joinName(prev.Name, pending[:tail])
 				prev.Wrapped = true
 			}
 		}
 		head := pending[min(tail, len(pending)):]
-		l.Name = textutil.Clean(strings.Join(head, " ") + " " + l.Name)
+		l.Name = joinName("", append(head, l.Name))
 		l.Wrapped = len(head) > 0
 		heads = append(heads, len(head))
 		pending = nil
@@ -443,9 +467,50 @@ func parseItems(lines []string, inv *model.Invoice) {
 	}
 	if len(pending) > 0 && len(inv.Lines) > 0 {
 		prev := &inv.Lines[len(inv.Lines)-1]
-		prev.Name = textutil.Clean(prev.Name + " " + strings.Join(pending, " "))
+		prev.Name = joinName(prev.Name, pending)
 		prev.Wrapped = true
 	}
+}
+
+// joinName appends wrapped name lines; a line ending in a code hyphen ("CM-536-") joins without a space.
+func joinName(name string, parts []string) string {
+	for _, p := range parts {
+		p = textutil.Clean(p)
+		switch {
+		case p == "":
+		case name == "":
+			name = p
+		case codeHyphen(name):
+			name += p
+		default:
+			name += " " + p
+		}
+	}
+	return textutil.Clean(name)
+}
+
+func codeHyphen(s string) bool {
+	r := []rune(s)
+	n := len(r)
+	return n >= 2 && r[n-1] == '-' && (unicode.IsDigit(r[n-2]) || unicode.IsUpper(r[n-2]))
+}
+
+var columnWords = []string{"stt", "ten hang", "don vi tinh", "dvt", "so luong", "don gia", "thanh tien", "thue suat",
+	"tien thue", "(unit)", "(quantity)", "(amount)", "(description)", "(unit price)", "(vat rate)"}
+
+// pageHeader reports a repeated column header, "(1) (2) (3)" numbering or a "tiếp theo trang trước" line.
+func pageHeader(low string) bool {
+	if strings.Contains(low, "tiep theo trang") || strings.Contains(low, "trang truoc") ||
+		strings.HasPrefix(low, "(1) (2)") || strings.HasPrefix(low, "1 2 3 4 5") {
+		return true
+	}
+	n := 0
+	for _, w := range columnWords {
+		if strings.Contains(low, w) {
+			n++
+		}
+	}
+	return n >= 2
 }
 
 // statedLine picks printed totals and the amount in words from the block under the table.
