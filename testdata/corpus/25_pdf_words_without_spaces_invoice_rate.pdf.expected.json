@@ -1,0 +1,29 @@
+{
+  "should_parse": true,
+  "form": "1",
+  "serial": "K25THA",
+  "number": "3802879",
+  "date": "2025-10-02",
+  "seller_tax": "0100000003-005",
+  "line_count": 2,
+  "lines": [
+    {
+      "name": "Cước dịch vụ Viễn thông-Công nghệ thông tin tháng 09 năm 2025",
+      "unit": "Tháng",
+      "qty": 1,
+      "amount": 47272,
+      "vat_rate": "10%"
+    },
+    {
+      "name": "Phí thuê bao Internet cáp quang",
+      "unit": "Tháng",
+      "qty": 2,
+      "amount": 300000,
+      "vat_rate": "10%"
+    }
+  ],
+  "total_before_vat": 347272,
+  "total_vat": 34727,
+  "total": 381999,
+  "note": "Words placed as separate boxes with no space characters; month group row above the items; one VAT rate printed under the table, not per line."
+}

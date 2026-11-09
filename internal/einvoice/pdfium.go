@@ -7,10 +7,11 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
 
 	"github.com/klippa-app/go-pdfium"
+	"github.com/klippa-app/go-pdfium/references"
 	"github.com/klippa-app/go-pdfium/requests"
-	"github.com/klippa-app/go-pdfium/responses"
 	"github.com/klippa-app/go-pdfium/webassembly"
 
 	"github.com/nhuvaoanh123/hoadon-kho/internal/textutil"
@@ -24,18 +25,32 @@ var (
 	pdfiumMu   sync.Mutex
 )
 
-type textBox struct {
-	text                     string
-	left, right, top, bottom float64
+// glyph is one character as PDFium reports it; idx is its place in the text stream.
+type glyph struct {
+	text        string
+	idx, next   int // next: stream index of the following character
+	left, right float64
+	base, h     float64 // baseline y (PDF y grows upwards) and font height
+	spaceAfter  bool    // the stream has a space or line break right after it
 }
 
 // WarmUp loads the PDF engine in the background so the first PDF does not wait for it.
 func WarmUp() {
-	go func() { _, _ = pdfiumLines(nil) }()
+	go func() { _, _ = pdfiumPages(nil) }()
 }
 
-// pdfiumLines extracts each page's text as visual lines, top to bottom.
+// pdfiumLines extracts the text of all pages as visual lines, top to bottom.
 func pdfiumLines(data []byte) ([]string, error) {
+	pages, err := pdfiumPages(data)
+	var out []string
+	for _, p := range pages {
+		out = append(out, p...)
+	}
+	return out, err
+}
+
+// pdfiumPages extracts each page's text as visual lines, top to bottom.
+func pdfiumPages(data []byte) ([][]string, error) {
 	pdfiumOnce.Do(func() {
 		pdfiumPool, pdfiumErr = webassembly.Init(webassembly.Config{MinIdle: 1, MaxIdle: 1, MaxTotal: 1})
 	})
@@ -58,136 +73,140 @@ func pdfiumLines(data []byte) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	var out []string
+	var out [][]string
+	total := 0
 	for i := 0; i < pc.PageCount && i < 50; i++ {
-		res, err := inst.GetPageTextStructured(&requests.GetPageTextStructured{
-			Page: requests.Page{ByIndex: &requests.PageByIndex{Document: doc.Document, Index: i}},
-			Mode: requests.GetPageTextStructuredModeBoth,
-		})
+		gs, err := pageGlyphs(inst, doc.Document, i)
 		if err != nil {
 			return nil, err
 		}
-		box := func(p responses.CharPosition, t string) textBox {
-			return textBox{t, p.Left, p.Right, math.Min(p.Top, p.Bottom), math.Max(p.Top, p.Bottom)}
+		lines := glyphRows(gs)
+		for _, l := range lines {
+			total += len(l)
 		}
-		var runs, chars []textBox
-		for _, r := range res.Rects {
-			runs = append(runs, box(r.PointPosition, ""))
-		}
-		for _, c := range res.Chars {
-			chars = append(chars, box(c.PointPosition, c.Text))
-		}
-		out = append(out, pageLines(runs, chars)...)
+		out = append(out, lines)
 	}
-	if len(strings.Join(out, "")) == 0 {
+	if total == 0 {
 		return nil, errors.New("PDF không có chữ")
 	}
 	return out, nil
 }
 
-// pageLines uses PDFium's runs for layout and its characters for content: each character
-// belongs to exactly one run, so kerned pairs ("Ta", "11") are neither doubled nor split.
-func pageLines(runs, chars []textBox) []string {
-	var spaces []textBox
-	members := make([][]textBox, len(runs))
-	for _, c := range chars {
-		if strings.TrimSpace(c.text) == "" {
-			spaces = append(spaces, c)
+// pageGlyphs reads every character of a page with its baseline and font box.
+func pageGlyphs(inst pdfium.Pdfium, doc references.FPDF_DOCUMENT, index int) ([]glyph, error) {
+	pg, err := inst.FPDF_LoadPage(&requests.FPDF_LoadPage{Document: doc, Index: index})
+	if err != nil {
+		return nil, err
+	}
+	defer inst.FPDF_ClosePage(&requests.FPDF_ClosePage{Page: pg.Page})
+	tp, err := inst.FPDFText_LoadPage(&requests.FPDFText_LoadPage{Page: requests.Page{ByReference: &pg.Page}})
+	if err != nil {
+		return nil, err
+	}
+	defer inst.FPDFText_ClosePage(&requests.FPDFText_ClosePage{TextPage: tp.TextPage})
+	n, err := inst.FPDFText_CountChars(&requests.FPDFText_CountChars{TextPage: tp.TextPage})
+	if err != nil {
+		return nil, err
+	}
+	var gs []glyph
+	for i := 0; i < n.Count; i++ {
+		u, err := inst.FPDFText_GetUnicode(&requests.FPDFText_GetUnicode{TextPage: tp.TextPage, Index: i})
+		if err != nil {
+			return nil, err
+		}
+		r := rune(u.Unicode)
+		if r == 0 || unicode.IsSpace(r) || unicode.IsControl(r) {
+			if len(gs) > 0 {
+				gs[len(gs)-1].spaceAfter = true
+			}
 			continue
 		}
-		cx, cy := (c.left+c.right)/2, (c.top+c.bottom)/2
-		best, bestD := -1, math.Inf(1)
-		for i, r := range runs {
-			if cx < r.left-0.5 || cx > r.right+0.5 || cy < r.top-1 || cy > r.bottom+1 {
+		b, err := inst.FPDFText_GetCharBox(&requests.FPDFText_GetCharBox{TextPage: tp.TextPage, Index: i})
+		if err != nil {
+			return nil, err
+		}
+		lb, err := inst.FPDFText_GetLooseCharBox(&requests.FPDFText_GetLooseCharBox{TextPage: tp.TextPage, Index: i})
+		if err != nil {
+			return nil, err
+		}
+		o, err := inst.FPDFText_GetCharOrigin(&requests.FPDFText_GetCharOrigin{TextPage: tp.TextPage, Index: i})
+		if err != nil {
+			return nil, err
+		}
+		// Hộp theo phông (bề rộng ký tự): chữ trong một từ chạm nhau, giữa hai từ có khe.
+		g := glyph{text: string(r), idx: i, next: -1, left: float64(lb.Rect.Left), right: float64(lb.Rect.Right), base: o.Y,
+			h: math.Abs(float64(lb.Rect.Top - lb.Rect.Bottom))}
+		if g.right <= g.left {
+			g.left, g.right = b.Left, b.Right
+		}
+		if g.h < 1 {
+			g.h = math.Max(1, b.Top-b.Bottom)
+		}
+		if len(gs) > 0 {
+			gs[len(gs)-1].next = i
+		}
+		gs = append(gs, g)
+	}
+	return gs, nil
+}
+
+// glyphRows groups characters by baseline into lines, top to bottom. Baselines, not glyph
+// boxes, keep descenders and marks (g, p, ạ) on their own line.
+func glyphRows(gs []glyph) []string {
+	sort.SliceStable(gs, func(i, j int) bool { return gs[i].base > gs[j].base })
+	var out []string
+	var row []glyph
+	flush := func() {
+		if len(row) > 0 {
+			if s := textutil.Clean(joinRow(row)); s != "" {
+				out = append(out, s)
+			}
+		}
+		row = nil
+	}
+	for _, g := range gs {
+		if len(row) > 0 {
+			f := row[0]
+			if f.base-g.base > math.Max(1, math.Min(f.h, g.h)*0.3) {
+				flush()
+			}
+		}
+		row = append(row, g)
+	}
+	flush()
+	return out
+}
+
+// joinRow writes one line left to right; a glyph drawn twice at the same place (fake bold) counts once.
+func joinRow(row []glyph) string {
+	sort.SliceStable(row, func(i, j int) bool { return row[i].left < row[j].left })
+	var b strings.Builder
+	var prev *glyph
+	for i := range row {
+		g := &row[i]
+		if prev != nil {
+			if g.text == prev.text && math.Abs(g.left-prev.left) < (prev.right-prev.left)*0.3 {
 				continue
 			}
-			if d := math.Abs(cy - (r.top+r.bottom)/2); d < bestD {
-				best, bestD = i, d
+			if spacedGlyphs(*prev, *g) {
+				b.WriteByte(' ')
 			}
 		}
-		if best < 0 {
-			runs = append(runs, c)
-			members = append(members, nil)
-			best = len(runs) - 1
-		}
-		members[best] = append(members[best], c)
-	}
-	var words []textBox
-	for i, r := range runs {
-		if len(members[i]) == 0 {
-			continue
-		}
-		r.text = joinGlyphs(members[i], spaces)
-		// Run rects can cover a trailing space; glyph bounds keep that space between words.
-		r.left, r.right = members[i][0].left, members[i][0].right
-		for _, g := range members[i] {
-			r.left, r.right = math.Min(r.left, g.left), math.Max(r.right, g.right)
-		}
-		words = append(words, r)
-	}
-	return boxLines(words, spaces)
-}
-
-// spaced reports whether a space separates a and b: PDFium reported one between them, or the
-// gap is as wide as a column gap.
-func spaced(a, b textBox, spaces []textBox) bool {
-	h := math.Max(a.bottom-a.top, b.bottom-b.top)
-	if b.left-a.right > h*0.8 {
-		return true
-	}
-	for _, sp := range spaces {
-		x, y := (sp.left+sp.right)/2, (sp.top+sp.bottom)/2
-		if x >= a.right-0.6 && x <= b.left+0.6 && y >= math.Min(a.top, b.top)-1 && y <= math.Max(a.bottom, b.bottom)+1 {
-			return true
-		}
-	}
-	return false
-}
-
-func joinGlyphs(gs, spaces []textBox) string {
-	sort.SliceStable(gs, func(i, j int) bool { return gs[i].left < gs[j].left })
-	var b strings.Builder
-	for i, g := range gs {
-		if i > 0 && spaced(gs[i-1], g, spaces) {
-			b.WriteByte(' ')
-		}
 		b.WriteString(g.text)
+		prev = g
 	}
 	return b.String()
 }
 
-// boxLines joins runs whose vertical centres are close into one line (PDF y grows upwards).
-func boxLines(bs, spaces []textBox) []string {
-	sort.SliceStable(bs, func(i, j int) bool { return bs[i].top+bs[i].bottom > bs[j].top+bs[j].bottom })
-	var out []string
-	var row []textBox
-	flush := func() {
-		if len(row) == 0 {
-			return
-		}
-		sort.SliceStable(row, func(i, j int) bool { return row[i].left < row[j].left })
-		var b strings.Builder
-		for i, x := range row {
-			if i > 0 && spaced(row[i-1], x, spaces) {
-				b.WriteByte(' ')
-			}
-			b.WriteString(x.text)
-		}
-		if s := textutil.Clean(b.String()); s != "" {
-			out = append(out, s)
-		}
-		row = nil
+// spacedGlyphs: a space PDFium put between stream neighbours, or a gap between the font boxes
+// (some PDFs place each word without a space character).
+func spacedGlyphs(a, b glyph) bool {
+	switch {
+	case b.left-a.right > math.Max(a.h, b.h)*0.06:
+		return true
+	case b.idx == a.next:
+		return a.spaceAfter
+	default:
+		return a.idx == b.next && b.spaceAfter
 	}
-	for _, x := range bs {
-		if len(row) > 0 {
-			f := row[0]
-			c, fc := (x.top+x.bottom)/2, (f.top+f.bottom)/2
-			if fc-c > math.Max(1.5, math.Min(x.bottom-x.top, f.bottom-f.top)*0.5) {
-				flush()
-			}
-		}
-		row = append(row, x)
-	}
-	flush()
-	return out
 }

@@ -1,0 +1,29 @@
+{
+  "should_parse": true,
+  "form": "1",
+  "serial": "K25DAB",
+  "number": "12520468",
+  "date": "2025-10-02",
+  "seller_tax": "0100000003",
+  "line_count": 2,
+  "lines": [
+    {
+      "name": "Dịch vụ Di động",
+      "unit": "",
+      "amount": 127273,
+      "vat_rate": "10%",
+      "kind": "service"
+    },
+    {
+      "name": "Dịch vụ FTTH",
+      "unit": "",
+      "amount": 200000,
+      "vat_rate": "10%",
+      "kind": "service"
+    }
+  ],
+  "total_before_vat": 327273,
+  "total_vat": 32727,
+  "total": 360000,
+  "note": "Telecom table without unit or unit price column; 'SỐ LƯỢNG TB' is a subscriber count; bare 'CỘNG' totals row; grand total label without a number."
+}
