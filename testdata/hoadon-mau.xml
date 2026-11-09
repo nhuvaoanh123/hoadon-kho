@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Hóa đơn mẫu theo TT78, dữ liệu giả để thử nghiệm -->
+<HDon>
+  <DLHDon Id="data">
+    <TTChung>
+      <PBan>2.0.1</PBan>
+      <THDon>Hóa đơn giá trị gia tăng</THDon>
+      <KHMSHDon>1</KHMSHDon>
+      <KHHDon>C25MAU</KHHDon>
+      <SHDon>00003344</SHDon>
+      <NLap>2025-09-23</NLap>
+      <DVTTe>VND</DVTTe>
+      <TGia>1</TGia>
+      <HTTToan>TM/CK</HTTToan>
+    </TTChung>
+    <NDHDon>
+      <NBan>
+        <Ten>CÔNG TY TNHH ĐIỆN LẠNH MẪU</Ten>
+        <MST>0100000001</MST>
+        <DChi>Số 1 phố Mẫu, Hà Nội</DChi>
+      </NBan>
+      <NMua>
+        <Ten>CÔNG TY TNHH NGƯỜI MUA MẪU</Ten>
+        <MST>0200000002</MST>
+        <DChi>Số 2 đường Mẫu, Hải Phòng</DChi>
+      </NMua>
+      <DSHHDVu>
+        <HHDVu><TChat>1</TChat><STT>1</STT><THHDVu>Thiết bị bay hơi DD 26.2/140</THHDVu><DVTinh>Cái</DVTinh><SLuong>1</SLuong><DGia>22500000</DGia><ThTien>22500000</ThTien><TSuat>8%</TSuat></HHDVu>
+        <HHDVu><TChat>1</TChat><STT>2</STT><THHDVu>Quạt công nghiệp lạnh YWF4D-400S-E5L</THHDVu><DVTinh>Cái</DVTinh><SLuong>15</SLuong><DGia>780000</DGia><ThTien>11700000</ThTien><TSuat>8%</TSuat></HHDVu>
+        <HHDVu><TChat>1</TChat><STT>3</STT><THHDVu>Lọc ẩm DML 163</THHDVu><DVTinh>Cái</DVTinh><SLuong>40</SLuong><DGia>170000</DGia><ThTien>6800000</ThTien><TSuat>8%</TSuat></HHDVu>
+        <HHDVu><TChat>1</TChat><STT>4</STT><THHDVu>Lọc ẩm DML 164</THHDVu><DVTinh>Cái</DVTinh><SLuong>40</SLuong><DGia>180000</DGia><ThTien>7200000</ThTien><TSuat>8%</TSuat></HHDVu>
+        <HHDVu><TChat>1</TChat><STT>5</STT><THHDVu>Ống nối bằng đồng chữ S 1.5/8-1.3/8</THHDVu><DVTinh>Cái</DVTinh><SLuong>10</SLuong><DGia>50000</DGia><ThTien>500000</ThTien><TSuat>10%</TSuat></HHDVu>
+        <HHDVu><TChat>1</TChat><STT>6</STT><THHDVu>Khớp nối bằng đồng hình chữ V 1 3/8</THHDVu><DVTinh>Cái</DVTinh><SLuong>10</SLuong><DGia>40000</DGia><ThTien>400000</ThTien><TSuat>10%</TSuat></HHDVu>
+        <HHDVu><TChat>1</TChat><STT>7</STT><THHDVu>Gas lạnh R22</THHDVu><DVTinh>Kg</DVTinh><SLuong>272</SLuong><DGia>85083.06</DGia><ThTien>23142593</ThTien><TSuat>8%</TSuat>
+          <TTKhac><TTin><TTruong>VATAmount</TTruong><KDLieu>numeric</KDLieu><DLieu>1851407</DLieu></TTin></TTKhac></HHDVu>
+      </DSHHDVu>
+      <TToan>
+        <THTTLTSuat>
+          <LTSuat><TSuat>8%</TSuat><ThTien>71342593</ThTien><TThue>5707407</TThue></LTSuat>
+          <LTSuat><TSuat>10%</TSuat><ThTien>900000</ThTien><TThue>90000</TThue></LTSuat>
+        </THTTLTSuat>
+        <TgTCThue>72242593</TgTCThue>
+        <TgTThue>5797407</TgTThue>
+        <TgTTTBSo>78040000</TgTTTBSo>
+        <TgTTTBChu>Bảy mươi tám triệu không trăm bốn mươi nghìn đồng</TgTTTBChu>
+      </TToan>
+    </NDHDon>
+  </DLHDon>
+  <MCCQT>00A1B2C3D4E5F60718293A4B5C6D7E8F90</MCCQT>
+</HDon>

@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hóa đơn → Kho</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>Hóa đơn đầu vào → Kho hàng</h1>
+  <nav>
+    <button data-tab="upload" class="active">1. Nhập hóa đơn</button>
+    <button data-tab="invoices">2. Hóa đơn đã nhập</button>
+    <button data-tab="stock">3. Tồn kho</button>
+    <button data-tab="reports">4. Báo cáo Excel</button>
+    <button data-tab="settings">Cài đặt</button>
+  </nav>
+</header>
+<main>
+  <section id="tab-upload" class="tab active">
+    <div id="drop" class="drop">
+      <p><b>Kéo thả file hóa đơn vào đây</b> hoặc <label class="link">chọn file<input id="file" type="file" multiple accept=".xml,.pdf,.zip" hidden></label></p>
+      <p class="muted">Hỗ trợ: <b>XML</b> hóa đơn điện tử (chính xác nhất), <b>PDF</b> có chữ, <b>ZIP</b> tải từ cổng hóa đơn. Chọn nhiều file cùng lúc được.</p>
+    </div>
+    <div id="drafts"></div>
+  </section>
+
+  <section id="tab-invoices" class="tab">
+    <div class="toolbar">
+      Từ <input type="date" id="inv-from"> đến <input type="date" id="inv-to">
+      <button id="inv-load">Xem</button>
+    </div>
+    <table id="inv-table" class="grid"></table>
+  </section>
+
+  <section id="tab-stock" class="tab">
+    <div class="toolbar">
+      <input id="stock-q" placeholder="Tìm mã hoặc tên hàng..." size="30">
+      <span id="stock-total" class="muted"></span>
+    </div>
+    <table id="stock-table" class="grid"></table>
+  </section>
+
+  <section id="tab-reports" class="tab">
+    <div class="toolbar">
+      Kỳ báo cáo: từ <input type="date" id="rep-from"> đến <input type="date" id="rep-to">
+      <button data-range="month">Tháng này</button>
+      <button data-range="quarter">Quý này</button>
+      <button data-range="year">Năm nay</button>
+    </div>
+    <div class="cards">
+      <a class="card" data-export="purchases"><b>Bảng kê hóa đơn mua vào</b><span>Theo nhóm thuế suất, dùng đối chiếu tờ khai thuế GTGT</span></a>
+      <a class="card" data-export="receipts"><b>Phiếu nhập kho (mẫu 01-VT)</b><span>Mỗi hóa đơn có hàng hóa một phiếu, in ký được</span></a>
+      <a class="card" data-export="stock"><b>Nhập - Xuất - Tồn</b><span>Số lượng và giá trị, giá xuất bình quân gia quyền</span></a>
+      <a class="card" data-export="cards"><b>Thẻ kho (sổ kho)</b><span>Mỗi mặt hàng một trang</span></a>
+      <a class="card" data-export="services"><b>Bảng kê chi phí dịch vụ</b><span>Các khoản dịch vụ, không vào kho</span></a>
+      <a class="card" data-export="import"><b>File nhập liệu phần mềm kế toán</b><span>Một dòng/mặt hàng kèm TK Nợ/Có, dùng chức năng nhập từ Excel của MISA, Fast...</span></a>
+    </div>
+  </section>
+
+  <section id="tab-settings" class="tab">
+    <form id="settings" class="form">
+      <h3>Thông tin doanh nghiệp (in trên chứng từ)</h3>
+      <label>Tên doanh nghiệp <input name="company_name"></label>
+      <label>Địa chỉ <input name="company_address"></label>
+      <label>Mã số thuế <input name="company_tax"></label>
+      <label>Tên kho <input name="warehouse"></label>
+      <label>Căn cứ mẫu chứng từ
+        <select id="basis-pick">
+          <option value="">— chọn nhanh —</option>
+          <option>(Ban hành theo Thông tư số 133/2016/TT-BTC ngày 26/08/2016 của Bộ Tài chính)</option>
+          <option>(Kèm theo Thông tư số 99/2025/TT-BTC ngày 27/10/2025 của Bộ Tài chính)</option>
+          <option>(Ban hành theo Thông tư số 200/2014/TT-BTC ngày 22/12/2014 của Bộ Tài chính)</option>
+        </select>
+        <input name="form_basis">
+      </label>
+      <h3>Tài khoản hạch toán gợi ý</h3>
+      <label>TK hàng hóa <input name="acct_goods" size="6"></label>
+      <label>TK chi phí dịch vụ <input name="acct_service" size="6"></label>
+      <label>TK thuế GTGT được khấu trừ <input name="acct_vat" size="6"></label>
+      <label>TK phải trả người bán <input name="acct_payable" size="6"></label>
+      <button type="submit">Lưu cài đặt</button>
+      <p class="muted">Dữ liệu lưu tại: <code id="data-dir"></code><br>Sao lưu: chép cả thư mục này. Phiên bản: <span id="version"></span></p>
+    </form>
+  </section>
+</main>
+<div id="modal" class="modal" hidden><div class="modal-box"><button class="close" id="modal-close">✕</button><div id="modal-body"></div></div></div>
+<div id="toast"></div>
+<script src="app.js"></script>
+</body>
+</html>
