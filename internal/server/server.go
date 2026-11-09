@@ -15,6 +15,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -55,6 +56,8 @@ func New(st *store.Store, dataDir, version string) http.Handler {
 	s.mux.Handle("GET /", http.FileServer(http.FS(web)))
 	s.mux.HandleFunc("GET /api/ping", s.ping)
 	s.mux.HandleFunc("POST /api/parse", s.parse)
+	s.mux.HandleFunc("POST /api/parse-text", s.parseText)
+	s.mux.HandleFunc("POST /api/batch", s.batch)
 	s.mux.HandleFunc("POST /api/invoices", s.saveInvoice)
 	s.mux.HandleFunc("POST /api/check", s.checkInvoice)
 	s.mux.HandleFunc("GET /api/ocr", s.ocrStatus)
@@ -121,10 +124,20 @@ type Draft struct {
 }
 
 func (s *Server) parse(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseMultipartForm(64 << 20); err != nil {
-		writeErr(w, http.StatusBadRequest, fmt.Errorf("không đọc được file tải lên: %w", err))
+	drafts, err := s.parseUpload(r)
+	if err != nil {
+		writeErr(w, http.StatusBadRequest, err)
 		return
 	}
+	writeJSON(w, drafts)
+}
+
+// parseUpload parses every file of a multipart "files" upload.
+func (s *Server) parseUpload(r *http.Request) ([]Draft, error) {
+	if err := r.ParseMultipartForm(64 << 20); err != nil {
+		return nil, fmt.Errorf("không đọc được file tải lên: %w", err)
+	}
+	defer r.MultipartForm.RemoveAll()
 	var drafts []Draft
 	for _, fh := range r.MultipartForm.File["files"] {
 		f, err := fh.Open()
@@ -140,12 +153,103 @@ func (s *Server) parse(w http.ResponseWriter, r *http.Request) {
 		}
 		drafts = append(drafts, s.parseFile(fh.Filename, data)...)
 	}
-	writeJSON(w, drafts)
+	return drafts, nil
+}
+
+// Saved is an invoice the batch mode stored without review.
+type Saved struct {
+	FileName  string  `json:"fileName"`
+	ID        int64   `json:"id"`
+	ReceiptNo string  `json:"receiptNo"`
+	Number    string  `json:"number"`
+	Date      string  `json:"date"`
+	Seller    string  `json:"seller"`
+	Total     float64 `json:"total"`
+}
+
+// batch saves every invoice that has no issue at all and returns the rest for review.
+func (s *Server) batch(w http.ResponseWriter, r *http.Request) {
+	drafts, err := s.parseUpload(r)
+	if err != nil {
+		writeErr(w, http.StatusBadRequest, err)
+		return
+	}
+	// XML trước: cùng hóa đơn có cả XML và PDF thì lưu bản XML, bản PDF thành trùng.
+	sort.SliceStable(drafts, func(i, j int) bool {
+		return drafts[i].Invoice != nil && drafts[i].Invoice.Source == model.SourceXML &&
+			(drafts[j].Invoice == nil || drafts[j].Invoice.Source != model.SourceXML)
+	})
+	out := struct {
+		Saved  []Saved `json:"saved"`
+		Drafts []Draft `json:"drafts"`
+	}{Saved: []Saved{}, Drafts: []Draft{}}
+	for _, d := range drafts {
+		if d.Invoice != nil {
+			d.DuplicateOf = s.st.FindDuplicate(d.Invoice)
+		}
+		if d.Error != "" || d.Invoice == nil || d.DuplicateOf > 0 || !clean(d.Invoice) {
+			out.Drafts = append(out.Drafts, d)
+			continue
+		}
+		inv := *d.Invoice
+		id, err := s.store(d.Token, &inv)
+		if err != nil {
+			d.Warnings = append(d.Warnings, "Chưa tự lưu được: "+err.Error())
+			out.Drafts = append(out.Drafts, d)
+			continue
+		}
+		out.Saved = append(out.Saved, Saved{FileName: d.FileName, ID: id, ReceiptNo: inv.ReceiptNo, Number: inv.Number,
+			Date: inv.Date, Seller: inv.Seller.Name, Total: inv.Total * inv.ExRate})
+	}
+	writeJSON(w, out)
+}
+
+// clean reports an invoice with no issue at all, so nothing needs the user's confirmation.
+func clean(inv *model.Invoice) bool {
+	if len(inv.Issues) > 0 {
+		return false
+	}
+	for _, l := range inv.Lines {
+		if len(l.Issues) > 0 {
+			return false
+		}
+	}
+	return true
+}
+
+// parseText reads invoice text pasted into the page.
+func (s *Server) parseText(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		Text string `json:"text"`
+	}
+	if err := json.NewDecoder(io.LimitReader(r.Body, 4<<20)).Decode(&req); err != nil {
+		writeErr(w, http.StatusBadRequest, err)
+		return
+	}
+	d := Draft{FileName: "Chữ dán vào", Warnings: []string{}}
+	inv, warns, err := einvoice.ParsePasted(req.Text)
+	if err != nil {
+		d.Error = err.Error()
+		writeJSON(w, []Draft{d})
+		return
+	}
+	s.classify(inv)
+	s.verify(inv)
+	d.Invoice, d.Warnings = inv, append(d.Warnings, warns...)
+	d.DuplicateOf = s.st.FindDuplicate(inv)
+	writeJSON(w, []Draft{d})
+}
+
+func (s *Server) classify(inv *model.Invoice) {
+	c := classify.Classifier{Rule: s.st.RuleLookup, KnownItem: s.st.KnownItem}
+	for i := range inv.Lines {
+		l := &inv.Lines[i]
+		l.Kind, l.Reason, l.Certain = c.Classify(*l)
+	}
 }
 
 func (s *Server) parseFile(name string, data []byte) []Draft {
 	var out []Draft
-	c := classify.Classifier{Rule: s.st.RuleLookup, KnownItem: s.st.KnownItem}
 	for _, p := range einvoice.ParseAny(name, data) {
 		d := Draft{FileName: p.Name, Warnings: p.Warnings}
 		if p.Err != nil {
@@ -159,10 +263,7 @@ func (s *Server) parseFile(name string, data []byte) []Draft {
 			out = append(out, d)
 			continue
 		}
-		for i := range p.Invoice.Lines {
-			l := &p.Invoice.Lines[i]
-			l.Kind, l.Reason, l.Certain = c.Classify(*l)
-		}
+		s.classify(p.Invoice)
 		s.verify(p.Invoice)
 		d.Invoice = p.Invoice
 		d.DuplicateOf = s.st.FindDuplicate(p.Invoice)
@@ -200,7 +301,16 @@ func (s *Server) saveInvoice(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, http.StatusBadRequest, err)
 		return
 	}
-	inv := &req.Invoice
+	id, err := s.store(req.Token, &req.Invoice)
+	if err != nil {
+		writeErr(w, http.StatusBadRequest, err)
+		return
+	}
+	writeJSON(w, map[string]any{"id": id, "receiptNo": req.Invoice.ReceiptNo})
+}
+
+// store re-verifies an invoice, saves it when nothing is unresolved and files the original upload.
+func (s *Server) store(token string, inv *model.Invoice) (int64, error) {
 	inv.ID, inv.ReceiptNo = 0, ""
 	inv.Seller.TaxCode = strings.ReplaceAll(strings.TrimSpace(inv.Seller.TaxCode), " ", "")
 	for i := range inv.Lines {
@@ -211,26 +321,23 @@ func (s *Server) saveInvoice(w http.ResponseWriter, r *http.Request) {
 	recomputeTotals(inv)
 	s.reverify(inv)
 	if probs := einvoice.Problems(inv); len(probs) > 0 {
-		writeErr(w, http.StatusBadRequest, errors.New("Chưa lưu được: "+strings.Join(probs, "; ")))
-		return
+		return 0, errors.New("Chưa lưu được: " + strings.Join(probs, "; "))
 	}
 	var src string
-	if tokenRe.MatchString(req.Token) {
-		src = filepath.Join(s.dataDir, "inbox", req.Token)
-		inv.SourceFile = unsafeChars.ReplaceAllString(fmt.Sprintf("%s_%s%s_%s", inv.Seller.TaxCode, inv.Form, inv.Serial, inv.Number), "-") + filepath.Ext(req.Token)
+	if tokenRe.MatchString(token) {
+		src = filepath.Join(s.dataDir, "inbox", token)
+		inv.SourceFile = unsafeChars.ReplaceAllString(fmt.Sprintf("%s_%s%s_%s", inv.Seller.TaxCode, inv.Form, inv.Serial, inv.Number), "-") + filepath.Ext(token)
 	}
 	id, err := s.st.SaveInvoice(inv)
 	if err != nil {
-		code := http.StatusBadRequest
-		writeErr(w, code, err)
-		return
+		return 0, err
 	}
 	if src != "" {
 		if err := os.Rename(src, filepath.Join(s.dataDir, "files", inv.SourceFile)); err != nil {
 			inv.SourceFile = ""
 		}
 	}
-	writeJSON(w, map[string]any{"id": id, "receiptNo": inv.ReceiptNo})
+	return id, nil
 }
 
 func (s *Server) ocrStatus(w http.ResponseWriter, _ *http.Request) {
@@ -256,7 +363,7 @@ func (s *Server) ocrInstall(w http.ResponseWriter, _ *http.Request) {
 
 // verify runs all checks on a freshly parsed invoice.
 func (s *Server) verify(inv *model.Invoice) {
-	einvoice.Verify(inv)
+	einvoice.VerifyKnown(inv, s.st.KnownItem)
 	if set, err := s.st.Settings(); err == nil {
 		einvoice.CheckBuyer(inv, set["company_tax"])
 	}

@@ -41,6 +41,8 @@ const (
 	SourcePDFRaw = "pdf-raw"
 	SourceHTML   = "html"
 	SourceOCR    = "ocr"
+	// SourceText is invoice text pasted by the user (email, chat, PDF copy).
+	SourceText = "text"
 )
 
 // Stated holds totals printed on a non-XML invoice, used to cross-check the lines.

@@ -12,7 +12,11 @@ import (
 
 // Verify sets the issues of the invoice and its lines. Saving needs Block issues fixed
 // and every other issue confirmed by the user.
-func Verify(inv *model.Invoice) {
+func Verify(inv *model.Invoice) { VerifyKnown(inv, nil) }
+
+// VerifyKnown is Verify where known(item key) reports goods already in stock: a wrapped
+// name that rebuilds exactly such an item's name and unit is not flagged.
+func VerifyKnown(inv *model.Invoice, known func(key string) bool) {
 	inv.Issues = nil
 	add := func(block bool, f string, a ...any) {
 		inv.Issues = append(inv.Issues, model.Issue{Text: fmt.Sprintf(f, a...), Block: block})
@@ -37,11 +41,14 @@ func Verify(inv *model.Invoice) {
 	if inv.Source == model.SourceOCR || inv.Source == model.SourcePDFRaw {
 		add(false, "Thông tin đầu hóa đơn (ký hiệu, số, ngày, người bán, MST) đọc bằng OCR: hãy đối chiếu với bản gốc")
 	}
+	if inv.Source == model.SourceText {
+		add(false, "Chữ dán vào không phải file hóa đơn gốc: đối chiếu số, ngày, MST và các dòng với hóa đơn gốc")
+	}
 
 	var sumB, sumV float64
 	for i := range inv.Lines {
 		l := &inv.Lines[i]
-		verifyLine(inv, l)
+		verifyLine(inv, l, known)
 		switch l.Kind {
 		case model.KindNote:
 		case model.KindDiscount:
@@ -81,7 +88,7 @@ func Verify(inv *model.Invoice) {
 	}
 }
 
-func verifyLine(inv *model.Invoice, l *model.Line) {
+func verifyLine(inv *model.Invoice, l *model.Line, known func(string) bool) {
 	l.Issues = nil
 	add := func(block bool, f string, a ...any) {
 		l.Issues = append(l.Issues, model.Issue{Text: fmt.Sprintf(f, a...), Block: block})
@@ -120,8 +127,8 @@ func verifyLine(inv *model.Invoice, l *model.Line) {
 	switch inv.Source {
 	case model.SourceOCR, model.SourcePDFRaw:
 		add(false, "Đọc bằng OCR hoặc từ PDF lỗi font: đối chiếu tên hàng, ĐVT, số lượng, đơn giá với bản gốc")
-	case model.SourcePDF, model.SourceHTML:
-		if l.Wrapped {
+	case model.SourcePDF, model.SourceHTML, model.SourceText:
+		if l.Wrapped && (known == nil || !known(textutil.ItemKey(l.Name, l.Unit))) {
 			add(false, "Tên hàng in trên nhiều dòng, đã tự ghép: kiểm tra tên đúng và đủ")
 		}
 	}

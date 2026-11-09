@@ -37,7 +37,6 @@ func ParsePDF(data []byte) (inv *model.Invoice, warns []string, err error) {
 			if scrambled {
 				inv.Source = model.SourcePDFRaw
 			}
-			warns = append([]string{"Đọc từ PDF: hãy kiểm tra kỹ từng dòng trước khi lưu (XML luôn chính xác hơn)"}, warns...)
 			return inv, warns, nil
 		}
 	}
@@ -298,12 +297,7 @@ func ParseText(lines []string) (*model.Invoice, []string, error) {
 		inv.Buyer.Address = addrs[len(addrs)-1]
 	}
 
-	parseItems(lines, inv)
-	for _, need := range []struct{ v, name string }{{inv.Number, "số hóa đơn"}, {inv.Date, "ngày hóa đơn"}, {inv.Seller.TaxCode, "MST người bán"}} {
-		if need.v == "" {
-			warns = append(warns, "Không đọc được "+need.name+", hãy nhập tay")
-		}
-	}
+	parseItems(lines, inv) // số, ngày, MST thiếu: Verify báo lỗi phải sửa, không cảnh báo lặp lại
 	if len(inv.Lines) == 0 {
 		return nil, nil, errors.New("không tìm thấy dòng hàng hóa nào: hãy dùng file XML hoặc nhập tay")
 	}

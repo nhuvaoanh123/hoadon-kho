@@ -1,6 +1,7 @@
 package einvoice
 
 import (
+	"errors"
 	"html"
 	"regexp"
 	"strings"
@@ -53,7 +54,27 @@ func ParseHTML(data []byte) (*model.Invoice, []string, error) {
 		return nil, nil, err
 	}
 	inv.Source = model.SourceHTML
-	return inv, append([]string{"Đọc từ trang HTML: hãy kiểm tra trước khi lưu"}, warns...), nil
+	return inv, warns, nil
+}
+
+// ParsePasted reads invoice text pasted from an email, chat or a PDF copy.
+func ParsePasted(text string) (*model.Invoice, []string, error) {
+	text = strings.NewReplacer("\r\n", "\n", "\r", "\n", "\t", " ").Replace(text)
+	var lines []string
+	for _, l := range strings.Split(text, "\n") {
+		if l = textutil.Clean(l); l != "" {
+			lines = append(lines, l)
+		}
+	}
+	if len(lines) == 0 {
+		return nil, nil, errors.New("chưa có chữ nào được dán")
+	}
+	inv, warns, err := ParseText(lines)
+	if err != nil {
+		return nil, nil, err
+	}
+	inv.Source = model.SourceText
+	return inv, warns, nil
 }
 
 // DumpLines returns the text lines the parser sees for a PDF (text layer) or image (OCR).
